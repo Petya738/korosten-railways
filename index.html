@@ -1196,7 +1196,10 @@ function initSendForm(form) {
 
 document.querySelectorAll(".send-form").forEach(initSendForm);
 
-/* ===== Форум ===== */
+/* ===== ????? (Supabase + ????????? ?????? + ????) ===== */
+const SUPABASE_URL = "https://tugulwjegwdjezxyokpx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_yPwd608pxQvT1kZK8Zqtrg_qltevxX3";
+const HAS_SUPABASE = /^https?:/.test(SUPABASE_URL) && SUPABASE_KEY && !SUPABASE_URL.includes("PASTE");
 const FORUM_KINDS = ["question", "idea", "wish", "bug", "coop", "other"];
 const FORUM_STATUSES = ["pending", "progress", "accepted", "declined", "done"];
 const FORUM_LS = "kr-forum";
@@ -1204,27 +1207,40 @@ const STATIC_ADMIN_PASSWORD = "korosten-admin";
 const forumList = $("#forumList"), forumFilters = $("#forumFilters"), forumNote = $("#forumNote");
 const formForum = $("#formForum"), forumAdminBtn = $("#forumAdminBtn"), forumLogin = $("#forumLogin");
 const forumPass = $("#forumPass"), forumLogout = $("#forumLogout"), forumAdminState = $("#forumAdminState");
-let forumTopics = [], forumFilter = "all", forumOffline = false, forumAdminPass = "";
+let forumTopics = [], forumFilter = "all", forumMode = "demo", forumAdminPass = "";
 try { forumAdminPass = sessionStorage.getItem("kr-admin") || ""; } catch (e) {}
 
-const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
 function forumDate(iso) {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
   try {
     return d.toLocaleString(LANG === "ua" ? "uk-UA" : "ru-RU",
-      { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+      { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
   } catch (e) { return d.toLocaleString(); }
 }
 function readLocalForum() {
-  try {
-    const arr = JSON.parse(localStorage.getItem(FORUM_LS) || "[]");
-    return Array.isArray(arr) ? arr : [];
-  } catch (e) { return []; }
+  try { const arr = JSON.parse(localStorage.getItem(FORUM_LS) || "[]"); return Array.isArray(arr) ? arr : []; } catch (e) { return []; }
 }
 function writeLocalForum() {
   try { localStorage.setItem(FORUM_LS, JSON.stringify(forumTopics.slice(0, 500))); } catch (e) {}
+}
+async function sb(path, opts = {}) {
+  const res = await fetch(SUPABASE_URL + path, {
+    ...opts,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: "Bearer " + SUPABASE_KEY,
+      "Content-Type": "application/json",
+      ...(opts.headers || {})
+    }
+  });
+  const text = await res.text();
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch (e) { data = { message: text }; }
+  if (!res.ok) throw new Error(data.message || data.error_description || data.error || "supabase");
+  return data;
 }
 async function apiForum(payload) {
   const res = await fetch("/api/forum", {
@@ -1241,18 +1257,17 @@ function forumSetMsg(text, cls) {
   forumAdminState.className = "forum-adminstate" + (cls ? " " + cls : "");
 }
 function paintForumNote() {
-  const local = IS_STATIC || forumOffline;
-  forumNote.hidden = !local;
-  if (!local) return;
-  forumNote.textContent = IS_STATIC ? t("forum.staticNote") : t("forum.localOnly");
+  const show = forumMode !== "server" && forumMode !== "cloud";
+  forumNote.hidden = !show;
+  if (!show) return;
+  forumNote.textContent = forumMode === "demo-static" ? t("forum.staticNote") : t("forum.localOnly");
 }
 function paintForumAdmin() {
   const admin = !!forumAdminPass;
   forumAdminBtn.hidden = admin;
   forumLogin.hidden = admin;
   forumLogout.hidden = !admin;
-  if (admin) forumSetMsg(t("forum.adminOn"));
-  else forumSetMsg("");
+  if (admin) forumSetMsg(t("forum.adminOn")); else forumSetMsg("");
 }
 function renderForumFilters() {
   const defs = [["all", t("forum.filter.all")]].concat(FORUM_STATUSES.map(s => [s, t("forum.status." + s)]));
@@ -1282,8 +1297,8 @@ function renderForumList() {
         <span class="badge ${status}">${escHtml(t("forum.status." + status))}</span>
       </div>
       <h3>${escHtml(x.title || "")}</h3>
-      <p>${escHtml(x.text || "")}</p>
-      <div class="topic-meta">${escHtml(x.name || t("forum.anon"))} · ${escHtml(forumDate(x.created))}</div>
+      <p>${escHtml(x.body || x.text || "")}</p>
+      <div class="topic-meta">${escHtml(x.name || t("forum.anon"))} ? ${escHtml(forumDate(x.created_at || x.created))}</div>
       ${admin}
     </article>`;
   }).join("");
@@ -1299,9 +1314,18 @@ function paintForum() {
 }
 
 async function loadForum() {
+  if (HAS_SUPABASE) {
+    try {
+      const data = await sb("/rest/v1/topics?select=*&order=created_at.desc&limit=200");
+      forumTopics = Array.isArray(data) ? data : [];
+      forumMode = "cloud";
+      paintForum();
+      return;
+    } catch (e) { /* fall through */ }
+  }
   if (IS_STATIC) {
     forumTopics = readLocalForum();
-    forumOffline = false;
+    forumMode = "demo-static";
     paintForum();
     return;
   }
@@ -1310,42 +1334,40 @@ async function loadForum() {
     const data = await res.json();
     if (!res.ok || !data.ok) throw new Error();
     forumTopics = Array.isArray(data.topics) ? data.topics : [];
-    forumOffline = false;
+    forumMode = "server";
   } catch (e) {
     forumTopics = readLocalForum();
-    forumOffline = true;
+    forumMode = "demo-local";
   }
   paintForum();
 }
 
-forumAdminBtn.addEventListener("click", () => {
-  forumLogin.hidden = false;
-  forumPass.focus();
-});
+async function forumLoginCheck(pass) {
+  if (HAS_SUPABASE) {
+    const data = await sb("/rest/v1/rpc/forum_admin", {
+      method: "POST",
+      body: JSON.stringify({ action: "login", password: pass })
+    });
+    return !!(data && data.ok);
+  }
+  if (IS_STATIC) return pass === STATIC_ADMIN_PASSWORD;
+  await apiForum({ action: "login", password: pass });
+  return true;
+}
+
+forumAdminBtn.addEventListener("click", () => { forumLogin.hidden = false; forumPass.focus(); });
 forumLogin.addEventListener("submit", async e => {
   e.preventDefault();
   const pass = forumPass.value.trim();
   if (!pass) return;
-  if (IS_STATIC) {
-    if (pass === STATIC_ADMIN_PASSWORD) {
-      forumAdminPass = pass;
-      try { sessionStorage.setItem("kr-admin", pass); } catch (e2) {}
-      forumPass.value = "";
-      paintForum();
-    } else {
-      forumSetMsg(t("forum.adminBad"), "err");
-    }
-    return;
-  }
   try {
-    await apiForum({ action: "login", password: pass });
+    const ok = await forumLoginCheck(pass);
+    if (!ok) throw new Error("bad");
     forumAdminPass = pass;
     try { sessionStorage.setItem("kr-admin", pass); } catch (e2) {}
     forumPass.value = "";
     paintForum();
-  } catch (err) {
-    forumSetMsg(t("forum.adminBad"), "err");
-  }
+  } catch (err) { forumSetMsg(t("forum.adminBad"), "err"); }
 });
 forumLogout.addEventListener("click", () => {
   forumAdminPass = "";
@@ -1367,68 +1389,60 @@ formForum.addEventListener("submit", async e => {
   const btn = formForum.querySelector(".send");
   const title = formForum.querySelector('[name="title"]').value.trim();
   const text = formForum.querySelector('[name="text"]').value.trim();
-  const name = formForum.querySelector('[name="name"]').value.trim();
+  const name = formForum.querySelector('[name="name"]').value.trim() || t("forum.anon");
   const kind = formForum.querySelector('[name="kind"]').value;
-  const setMsg = (txt, cls) => {
-    status.textContent = txt || "";
-    status.className = "status" + (cls ? " " + cls : "");
-  };
-  if (title.length < 3 || text.length < 3) {
-    setMsg(t("forum.short"), "err");
-    hap("medium");
-    return;
-  }
-  btn.disabled = true;
-  btn.dataset.busy = "1";
-  btn.textContent = t("forum.publishing");
-  setMsg("");
+  const setMsg = (txt, cls) => { status.textContent = txt || ""; status.className = "status" + (cls ? " " + cls : ""); };
+  if (title.length < 3 || text.length < 3) { setMsg(t("forum.short"), "err"); hap("medium"); return; }
+  btn.disabled = true; btn.dataset.busy = "1"; btn.textContent = t("forum.publishing"); setMsg("");
   try {
-    if (IS_STATIC) {
-      const topic = {
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-        title, text, name: name || t("forum.anon"), kind,
-        status: "pending", created: new Date().toISOString()
-      };
-      forumTopics.unshift(topic);
-      writeLocalForum();
+    if (HAS_SUPABASE) {
+      await sb("/rest/v1/topics", {
+        method: "POST",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ title, body: text, name, kind: FORUM_KINDS.includes(kind)?kind:"other", status: "pending" })
+      });
+      formForum.reset(); setMsg(t("forum.published"), "ok"); hap("heavy");
+      await loadForum();
+    } else if (IS_STATIC) {
+      const topic = { id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), title, text, name, kind, status:"pending", created: new Date().toISOString() };
+      forumTopics.unshift(topic); writeLocalForum();
+      formForum.reset(); setMsg(t("forum.published"), "ok"); hap("heavy"); paintForum();
     } else {
-      await apiForum({ action: "create", title, text, name, kind });
+      await apiForum({ action:"create", title, text, name, kind });
+      formForum.reset(); setMsg(t("forum.published"), "ok"); hap("heavy"); await loadForum();
     }
-    formForum.reset();
-    setMsg(t("forum.published"), "ok");
-    hap("heavy");
-    if (!IS_STATIC) await loadForum();
-    else paintForum();
   } catch (err) {
-    setMsg(t("forum.saveError"), "err");
+    setMsg(t("forum.saveError") + (err && err.message ? " (" + err.message + ")" : ""), "err");
     hap("medium");
   } finally {
-    btn.disabled = false;
-    delete btn.dataset.busy;
-    btn.textContent = t("forum.publish");
+    btn.disabled = false; delete btn.dataset.busy; btn.textContent = t("forum.publish");
   }
 });
 
 forumList.addEventListener("change", async e => {
   const sel = e.target.closest("select[data-status]");
   if (!sel) return;
-  const topic = forumTopics.find(x => x.id === sel.dataset.id);
+  const topic = forumTopics.find(x => String(x.id) === String(sel.dataset.id));
   if (!topic) return;
   const prev = topic.status, next = sel.value;
   try {
-    if (IS_STATIC) {
-      topic.status = next;
-      writeLocalForum();
-      paintForum();
+    if (HAS_SUPABASE) {
+      const data = await sb("/rest/v1/rpc/forum_admin", {
+        method: "POST",
+        body: JSON.stringify({ action:"status", id: String(topic.id), status: next, password: forumAdminPass })
+      });
+      if (!data || !data.ok) throw new Error((data && data.error) || "denied");
+      await loadForum();
+    } else if (IS_STATIC) {
+      topic.status = next; writeLocalForum(); paintForum();
     } else {
-      await apiForum({ action: "status", id: topic.id, status: next, password: forumAdminPass });
+      await apiForum({ action:"status", id: topic.id, status: next, password: forumAdminPass });
       await loadForum();
     }
-    forumSetMsg(t("forum.statusChanged"));
-    hap("sel");
+    forumSetMsg(t("forum.statusChanged")); hap("sel");
   } catch (err) {
     sel.value = prev;
-    forumSetMsg(t("forum.saveError"), "err");
+    forumSetMsg(t("forum.saveError") + (err && err.message ? " (" + err.message + ")" : ""), "err");
   }
 });
 forumList.addEventListener("click", async e => {
@@ -1436,22 +1450,28 @@ forumList.addEventListener("click", async e => {
   if (!del) return;
   if (!confirm(t("forum.confirmDelete"))) return;
   try {
-    if (IS_STATIC) {
-      forumTopics = forumTopics.filter(x => x.id !== del.dataset.id);
-      writeLocalForum();
-      paintForum();
+    if (HAS_SUPABASE) {
+      const data = await sb("/rest/v1/rpc/forum_admin", {
+        method: "POST",
+        body: JSON.stringify({ action:"delete", id: String(del.dataset.id), password: forumAdminPass })
+      });
+      if (!data || !data.ok) throw new Error((data && data.error) || "denied");
+      await loadForum();
+    } else if (IS_STATIC) {
+      forumTopics = forumTopics.filter(x => String(x.id) !== String(del.dataset.id));
+      writeLocalForum(); paintForum();
     } else {
-      await apiForum({ action: "delete", id: del.dataset.id, password: forumAdminPass });
+      await apiForum({ action:"delete", id: del.dataset.id, password: forumAdminPass });
       await loadForum();
     }
-    forumSetMsg(t("forum.deleted"));
-    hap("heavy");
+    forumSetMsg(t("forum.deleted")); hap("heavy");
   } catch (err) {
-    forumSetMsg(t("forum.saveError"), "err");
+    forumSetMsg(t("forum.saveError") + (err && err.message ? " (" + err.message + ")" : ""), "err");
   }
 });
 
 loadForum();
+
 
 /* ===== Старт ===== */
 applyLang();
