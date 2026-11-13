@@ -986,6 +986,202 @@ function openExternal(url) {
 }
 
 /* ===== Язык ===== */
+
+/* ===== Sneak peek: ????????, ?????????????, ????? ===== */
+const car = $("#car"), dots = $("#dots"), peekEmpty = $("#peekEmpty");
+const peekCreate = $("#peekCreate"), peekStatus = peekCreate ? peekCreate.querySelector(".peek-status") : null;
+const peekFile = peekCreate ? peekCreate.querySelector(".peek-file") : null;
+const peekPick = peekCreate ? peekCreate.querySelector(".peek-pick") : null;
+const peekPickTxt = peekCreate ? peekCreate.querySelector(".peek-pick-txt") : null;
+const peekThumb = peekCreate ? peekCreate.querySelector(".peek-thumb") : null;
+const peekThumbImg = peekCreate ? peekCreate.querySelector(".peek-thumb-img") : null;
+const peekRemove = peekCreate ? peekCreate.querySelector(".peek-remove") : null;
+let cards = [], dt = [], peekTimer = null, peekPauseUntil = 0, peekPhoto = "";
+const peekIsAdmin = () => !!forumAdminPass;
+
+function peekReadLocal() {
+  try { const a = JSON.parse(localStorage.getItem("kr-peeks") || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+function peekWriteLocal() {
+  try { localStorage.setItem("kr-peeks", JSON.stringify(peekItems.slice(0, 50))); } catch (e) {}
+}
+function compressImage(file, maxW, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      try {
+        let w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", quality));
+      } catch (e) { URL.revokeObjectURL(url); reject(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("img")); };
+    img.src = url;
+  });
+}
+function stopPeekAuto() { if (peekTimer) { clearInterval(peekTimer); peekTimer = null; } }
+function startPeekAuto() {
+  stopPeekAuto();
+  if (!cards.length) return;
+  peekTimer = setInterval(() => {
+    if (!cards.length || document.hidden) return;
+    if (Date.now() < peekPauseUntil) return;
+    if (typeof cur !== "undefined" && cur !== 1) return;
+    if (document.body.classList.contains("sheeted")) return;
+    const c = car.getBoundingClientRect(), mid = c.left + c.width / 2;
+    let best = 0, bd = 1e9;
+    cards.forEach((k, i) => { const r = k.getBoundingClientRect(), d = Math.abs(r.left + r.width / 2 - mid); if (d < bd) { bd = d; best = i; } });
+    const next = (best + 1) % cards.length;
+    if (cards[next]) car.scrollTo({ left: cards[next].offsetLeft - 22, behavior: "smooth" });
+  }, 3000);
+}
+function renderCards() {
+  if (!car) return;
+  if (peekEmpty) peekEmpty.hidden = peekItems.length > 0;
+  car.hidden = peekItems.length === 0;
+  if (dots) dots.hidden = peekItems.length === 0;
+  car.innerHTML = peekItems.map((p, i) => {
+    const img = p.image_url || p.image || "";
+    const tag = tr(p.tag) || t("peek.labelPh");
+    const title = tr(p.title || p.t) || "";
+    const desc = tr(p.body || p.text || p.d) || "";
+    const bg = img ? ` style="background-image:url('${String(img).replace(/'/g,"%27")}')"` : "";
+    const del = peekIsAdmin() ? `<span class="card-del" data-peek-del="${escHtml(String(p.id))}" role="button" aria-label="${escHtml(t("forum.delete"))}"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2 2 12"/></svg></span>` : "";
+    return `<button class="card${img ? " has-img" : ""}" data-i="${i}" type="button"${bg}>
+       ${del}
+       <span class="num">${String(i + 1).padStart(2,"0")}</span>
+       <span class="tag">${escHtml(tag)}</span>
+       <span class="ct">${escHtml(title)}</span>
+       <span class="cd">${escHtml(desc)}</span>
+     </button>`;
+  }).join("");
+  if (dots) dots.innerHTML = peekItems.map(() => "<i></i>").join("");
+  cards = [...car.children];
+  dt = dots ? [...dots.children] : [];
+  requestAnimationFrame(tilt);
+  startPeekAuto();
+}
+function tilt() {
+  if (!cards.length || !car) return;
+  const c = car.getBoundingClientRect(), mid = c.left + c.width / 2;
+  let best = 0, bd = 1e9;
+  cards.forEach((k, i) => {
+    const r = k.getBoundingClientRect(), d = Math.abs(r.left + r.width / 2 - mid), n = Math.min(1, d / r.width);
+    k.style.transform = `scale(${1 - n * .07})`;
+    k.style.opacity = 1 - n * .5;
+    if (d < bd) { bd = d; best = i; }
+  });
+  dt.forEach((x, i) => x.classList.toggle("on", i === best));
+}
+if (car) {
+  car.addEventListener("scroll", () => { peekPauseUntil = Date.now() + 4500; tilt(); }, { passive: true });
+  car.addEventListener("pointerdown", () => { peekPauseUntil = Date.now() + 6000; });
+}
+addEventListener("resize", tilt);
+
+async function loadPeeks() {
+  if (HAS_SUPABASE) {
+    try {
+      const data = await sb("/rest/v1/peeks?select=*&order=created_at.desc&limit=50");
+      peekItems = Array.isArray(data) ? data : [];
+      renderCards(); return;
+    } catch (e) { }
+  }
+  peekItems = peekReadLocal();
+  renderCards();
+}
+
+if (peekPick) peekPick.addEventListener("click", () => peekFile && peekFile.click());
+if (peekFile) peekFile.addEventListener("change", async () => {
+  const f = peekFile.files && peekFile.files[0]; if (!f) return;
+  try {
+    peekPhoto = await compressImage(f, 1200, 0.82);
+    if (peekThumbImg) peekThumbImg.src = peekPhoto;
+    if (peekThumb) peekThumb.hidden = false;
+    if (peekPickTxt) peekPickTxt.textContent = t("status.attached");
+  } catch (e2) { peekPhoto = ""; if (peekStatus) peekStatus.textContent = t("status.readError"); }
+});
+if (peekRemove) peekRemove.addEventListener("click", e => {
+  e.preventDefault(); peekPhoto = ""; if (peekFile) peekFile.value = "";
+  if (peekThumbImg) peekThumbImg.removeAttribute("src");
+  if (peekThumb) peekThumb.hidden = true;
+  if (peekPickTxt) peekPickTxt.textContent = t("peek.pick");
+});
+if (peekCreate) peekCreate.addEventListener("submit", async e => {
+  e.preventDefault();
+  const tag = peekCreate.querySelector('[name="tag"]').value.trim() || t("peek.labelPh");
+  const title = peekCreate.querySelector('[name="title"]').value.trim();
+  const text = peekCreate.querySelector('[name="text"]').value.trim();
+  const btn = peekCreate.querySelector(".send");
+  const setMsg = (txt, cls) => { if (!peekStatus) return; peekStatus.textContent = txt || ""; peekStatus.className = "status peek-status" + (cls ? " " + cls : ""); };
+  if (!peekPhoto) { setMsg(t("peek.needPhoto"), "err"); return; }
+  if (title.length < 2 || text.length < 2) { setMsg(t("forum.short"), "err"); return; }
+  if (btn) { btn.disabled = true; btn.textContent = t("forum.publishing"); }
+  try {
+    let saved = false;
+    if (HAS_SUPABASE) {
+      try {
+        const data = await sb("/rest/v1/rpc/peek_admin", {
+          method: "POST",
+          body: JSON.stringify({ action:"create", password: forumAdminPass, tag, title, body: text, image_url: peekPhoto })
+        });
+        if (!data || !data.ok) throw new Error((data && data.error) || "denied");
+        await loadPeeks(); saved = true;
+      } catch (e2) {
+        if (!(IS_STATIC || /\.github\.io$/i.test(location.hostname))) throw e2;
+      }
+    }
+    if (!saved) {
+      peekItems.unshift({ id: Date.now().toString(36), tag, title, body: text, image: peekPhoto, created: new Date().toISOString() });
+      peekWriteLocal(); renderCards();
+    }
+    peekCreate.reset(); peekPhoto = "";
+    if (peekThumb) peekThumb.hidden = true;
+    if (peekThumbImg) peekThumbImg.removeAttribute("src");
+    if (peekPickTxt) peekPickTxt.textContent = t("peek.pick");
+    setMsg(t("peek.published") + (!saved && HAS_SUPABASE ? " " + t("forum.staticNote") : ""), "ok"); hap("heavy");
+  } catch (err) { setMsg(t("forum.saveError") + (err && err.message ? " ("+err.message+")" : ""), "err"); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = t("peek.publish"); } }
+});
+if (car) car.addEventListener("click", async e => {
+  const del = e.target.closest("[data-peek-del]");
+  if (del) {
+    e.preventDefault(); e.stopPropagation();
+    if (!peekIsAdmin() || !confirm(t("forum.confirmDelete"))) return;
+    const id = del.dataset.peekDel;
+    try {
+      let done = false;
+      if (HAS_SUPABASE) {
+        try {
+          const data = await sb("/rest/v1/rpc/peek_admin", {
+            method: "POST",
+            body: JSON.stringify({ action:"delete", id: id, password: forumAdminPass })
+          });
+          if (!data || !data.ok) throw new Error((data && data.error) || "denied");
+          await loadPeeks(); done = true;
+        } catch (e2) {
+          if (!(IS_STATIC || /\.github\.io$/i.test(location.hostname))) throw e2;
+        }
+      }
+      if (!done) {
+        peekItems = peekItems.filter(x => String(x.id) !== String(id));
+        peekWriteLocal(); renderCards();
+      }
+      hap("heavy");
+    } catch (err) { }
+    return;
+  }
+  const c = e.target.closest(".card");
+  if (c) openSheet(+c.dataset.i);
+});
+
+loadPeeks();
+
+
 const langBtns = [...document.querySelectorAll("#lang button")];
 function applyLang() {
   document.documentElement.lang = LANG === "ua" ? "uk" : "ru";
