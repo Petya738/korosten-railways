@@ -1,0 +1,6 @@
+{
+  "port": 8787,
+  "bot_token": "",
+  "chat_id": "",
+  "note": "Скопируй этот файл в config.json и заполни токен бота и chat_id."
+}
