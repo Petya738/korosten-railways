@@ -90,6 +90,8 @@ def format_text(payload):
     name = (payload.get("name") or "").strip()[:60] or "аноним"
     text = (payload.get("text") or "").strip()
     when = time.strftime("%d.%m.%Y %H:%M")
+    if (payload.get("type") or "idea") == "coop":
+        return "🤝 Запрос на сотрудничество · %s\n\n%s\n\n— %s\n%s" % (kind, text, name, when)
     return "🚆 Korosten Railways · %s\n\n%s\n\n— %s\n%s" % (kind, text, name, when)
 
 
