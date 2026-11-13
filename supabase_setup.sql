@@ -8,14 +8,20 @@ create table if not exists public.topics (
   updated_at timestamptz,
   title text not null check (char_length(title) between 3 and 120),
   body text not null check (char_length(body) between 3 and 3000),
-  name text not null default '??????',
+  name text not null default 'аноним',
   kind text not null default 'other' check (kind in ('question','idea','wish','bug','coop','other')),
-  status text not null default 'pending' check (status in ('pending','progress','accepted','declined','done'))
+  status text not null default 'pending' check (status in ('pending','progress','accepted','declined','done')),
+  reply text,
+  replied_at timestamptz
 );
 
 -- If your table already exists with column "text" instead of "body", either rename it:
 -- alter table public.topics rename column text to body;
 -- (The site sends both is not needed; this setup expects "body".)
+
+-- Migration for existing installs:
+alter table public.topics add column if not exists reply text;
+alter table public.topics add column if not exists replied_at timestamptz;
 
 -- 2) Enable RLS
 alter table public.topics enable row level security;
@@ -36,14 +42,14 @@ create policy "topics_insert" on public.topics
 -- No public update/delete policies: moderation goes through forum_admin RPC.
 
 -- 4) Admin function (change the password below!)
-create or replace function public.forum_admin(action text, password text, id bigint default null, status text default null)
+create or replace function public.forum_admin(action text, password text, id bigint default null, status text default null, reply text default null)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  admin_password text := 'Petya1028'; -- ?????? ?????? ?????????
+  admin_password text := 'Petya1028'; -- единый пароль создателя
   t public.topics;
 begin
   if password is distinct from admin_password then
@@ -62,6 +68,16 @@ begin
       returning * into t;
     if t.id is null then return jsonb_build_object('ok', false, 'error', 'not_found'); end if;
     return jsonb_build_object('ok', true, 'topic', to_jsonb(t));
+  elsif action = 'reply' then
+    if reply is null or char_length(trim(reply)) < 1 then
+      return jsonb_build_object('ok', false, 'error', 'bad_reply');
+    end if;
+    update public.topics
+      set reply = trim(forum_admin.reply), replied_at = now(), updated_at = now()
+      where topics.id = forum_admin.id
+      returning * into t;
+    if t.id is null then return jsonb_build_object('ok', false, 'error', 'not_found'); end if;
+    return jsonb_build_object('ok', true, 'topic', to_jsonb(t));
   elsif action = 'delete' then
     delete from public.topics where topics.id = forum_admin.id returning * into t;
     if t.id is null then return jsonb_build_object('ok', false, 'error', 'not_found'); end if;
@@ -73,7 +89,7 @@ end;
 $$;
 
 -- Allow website (anon/publishable key) to call the function
-grant execute on function public.forum_admin(text, text, bigint, text) to anon, authenticated;
+grant execute on function public.forum_admin(text, text, bigint, text, text) to anon, authenticated;
 
 -- 5) Sneak peek cards (photos as data URLs for simplicity)
 create table if not exists public.peeks (

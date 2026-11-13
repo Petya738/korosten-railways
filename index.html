@@ -262,6 +262,17 @@ select.inp option{background:#1c1c1e;color:#fff}
 .topic-del{padding:8px 12px;border-radius:11px;font-size:12.5px;font-weight:600;
   color:#ffa3a3;background:rgba(255,95,95,.12);box-shadow:inset 0 0 0 .5px rgba(255,95,95,.25)}
 .topic-del:active{transform:scale(.96)}
+
+.topic-reply{margin-top:12px;padding:12px 13px;border-radius:14px;background:rgba(37,99,235,.14);border:1px solid rgba(96,165,250,.18)}
+.topic-reply-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#93c5fd;margin-bottom:4px}
+.topic-reply p{font-size:14px;line-height:1.45;color:rgba(255,255,255,.88);margin-top:0;white-space:pre-wrap}
+.topic-reply-meta{font-size:11px;color:rgba(255,255,255,.4);margin-top:6px}
+.topic-reply-form{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);display:grid;gap:8px}
+.topic-reply-form textarea{min-height:70px;padding:10px 12px;border-radius:12px;font-size:14px}
+.topic-reply-form button{justify-self:start;padding:9px 14px;border-radius:12px;font-size:13px;font-weight:700;
+  background:rgba(37,99,235,.95);color:#fff}
+.topic-reply-form button:active{transform:scale(.97)}
+
 .forum-empty{text-align:center;color:rgba(255,255,255,.4);font-size:14px;padding:30px 10px}
 
 /* ---------- нижний таскбар (liquid glass) ---------- */
@@ -641,6 +652,15 @@ body.sheeted .sheet{transform:none}
 </div>
 
 <div class="scrim" id="scrim"></div>
+
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Закрыть">
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l10 10M12 2 2 12"/></svg>
+  </button>
+  <img id="lightboxImg" alt="">
+  <div class="lightbox-cap" id="lightboxCap"></div>
+</div>
+
 <div class="sheet" id="sheet" role="dialog" aria-modal="true">
   <div class="grab"></div>
   <button class="x press" id="close" aria-label="Закрыть"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2 2 12"/></svg></button>
@@ -1084,7 +1104,7 @@ if (car) {
 addEventListener("resize", tilt);
 
 async function loadPeeks() {
-  if (HAS_SUPABASE) {
+  if (typeof HAS_SUPABASE !== "undefined" && HAS_SUPABASE) {
     try {
       const data = await sb("/rest/v1/peeks?select=*&order=created_at.desc&limit=50");
       peekItems = Array.isArray(data) ? data : [];
@@ -1123,7 +1143,7 @@ if (peekCreate) peekCreate.addEventListener("submit", async e => {
   if (btn) { btn.disabled = true; btn.textContent = t("forum.publishing"); }
   try {
     let saved = false;
-    if (HAS_SUPABASE) {
+    if (typeof HAS_SUPABASE !== "undefined" && HAS_SUPABASE) {
       try {
         const data = await sb("/rest/v1/rpc/peek_admin", {
           method: "POST",
@@ -1143,7 +1163,7 @@ if (peekCreate) peekCreate.addEventListener("submit", async e => {
     if (peekThumb) peekThumb.hidden = true;
     if (peekThumbImg) peekThumbImg.removeAttribute("src");
     if (peekPickTxt) peekPickTxt.textContent = t("peek.pick");
-    setMsg(t("peek.published") + (!saved && HAS_SUPABASE ? " " + t("forum.staticNote") : ""), "ok"); hap("heavy");
+    setMsg(t("peek.published") + (!saved && (typeof HAS_SUPABASE !== "undefined" && HAS_SUPABASE) ? " " + t("forum.staticNote") : ""), "ok"); hap("heavy");
   } catch (err) { setMsg(t("forum.saveError") + (err && err.message ? " ("+err.message+")" : ""), "err"); }
   finally { if (btn) { btn.disabled = false; btn.textContent = t("peek.publish"); } }
 });
@@ -1155,7 +1175,7 @@ if (car) car.addEventListener("click", async e => {
     const id = del.dataset.peekDel;
     try {
       let done = false;
-      if (HAS_SUPABASE) {
+      if (typeof HAS_SUPABASE !== "undefined" && HAS_SUPABASE) {
         try {
           const data = await sb("/rest/v1/rpc/peek_admin", {
             method: "POST",
@@ -1176,8 +1196,31 @@ if (car) car.addEventListener("click", async e => {
     return;
   }
   const c = e.target.closest(".card");
-  if (c) openSheet(+c.dataset.i);
+  if (c) openPeekLightbox(+c.dataset.i);
 });
+
+
+const lightbox = $("#lightbox"), lightboxImg = $("#lightboxImg"), lightboxCap = $("#lightboxCap"), lightboxClose = $("#lightboxClose");
+function openPeekLightbox(i) {
+  const p = peekItems[i]; if (!p) return;
+  const img = p.image_url || p.image || "";
+  if (!img) return;
+  lightboxImg.src = img;
+  lightboxCap.textContent = tr(p.title || p.t) || "";
+  document.body.classList.add("lb-open");
+  lightbox.setAttribute("aria-hidden", "false");
+  peekPauseUntil = Date.now() + 60000;
+  hap("light");
+}
+function closePeekLightbox() {
+  document.body.classList.remove("lb-open");
+  lightbox.setAttribute("aria-hidden", "true");
+  lightboxImg.removeAttribute("src");
+  peekPauseUntil = Date.now() + 1500;
+}
+if (lightboxClose) lightboxClose.addEventListener("click", closePeekLightbox);
+if (lightbox) lightbox.addEventListener("click", e => { if (e.target === lightbox) closePeekLightbox(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && document.body.classList.contains("lb-open")) closePeekLightbox(); });
 
 loadPeeks();
 
@@ -1191,7 +1234,6 @@ function applyLang() {
   document.querySelectorAll("[data-i18n-aria]").forEach(el => { el.setAttribute("aria-label", t(el.dataset.i18nAria)); });
   langBtns.forEach(b => b.classList.toggle("on", b.dataset.lang === LANG));
   renderCards();
-  if (open >= 0) paintSheet();
   if (typeof paintAdmin === "function") paintAdmin();
   paintCta();
   formPainters.forEach(fn => fn());
@@ -1242,6 +1284,7 @@ const IS_STATIC = location.protocol === "file:" || /\.github\.io$/i.test(locatio
 const SUPABASE_URL = "https://tugulwjegwdjezxyokpx.supabase.co";
 const SUPABASE_KEY = "sb_publishable_yPwd608pxQvT1kZK8Zqtrg_qltevxX3";
 const HAS_SUPABASE = /^https?:/.test(SUPABASE_URL) && SUPABASE_KEY && !SUPABASE_URL.includes("PASTE");
+try{window.HAS_SUPABASE=HAS_SUPABASE;window.SUPABASE_URL=SUPABASE_URL;window.SUPABASE_KEY=SUPABASE_KEY;}catch(e){}
 
 const FORUM_KINDS = ["question", "idea", "wish", "bug", "coop", "other"];
 const FORUM_STATUSES = ["pending", "progress", "accepted", "declined", "done"];
@@ -1336,12 +1379,24 @@ function renderForumList() {
   forumList.innerHTML = list.map(x => {
     const kind = FORUM_KINDS.includes(x.kind) ? x.kind : "other";
     const status = FORUM_STATUSES.includes(x.status) ? x.status : "pending";
+    const reply = (x.reply || x.answer || "").trim();
+    const replyHtml = reply ? `
+      <div class="topic-reply">
+        <div class="topic-reply-label">${escHtml(t("forum.replyLabel"))}</div>
+        <p>${escHtml(reply)}</p>
+        ${x.replied_at || x.reply_at ? `<div class="topic-reply-meta">${escHtml(forumDate(x.replied_at || x.reply_at))}</div>` : ""}
+      </div>` : "";
+    const replyForm = forumAdminPass ? `
+      <div class="topic-reply-form">
+        <textarea class="inp" data-reply-text="${escHtml(String(x.id))}" placeholder="${escHtml(t("forum.replyPh"))}">${escHtml(reply)}</textarea>
+        <button type="button" data-reply-send="${escHtml(String(x.id))}">${escHtml(reply ? t("forum.replyUpdate") : t("forum.replySend"))}</button>
+      </div>` : "";
     const admin = forumAdminPass ? `
       <div class="topic-admin">
-        <select class="topic-status" data-status data-id="${escHtml(x.id)}" aria-label="${escHtml(t("form.kind"))}">
+        <select class="topic-status" data-status data-id="${escHtml(String(x.id))}" aria-label="${escHtml(t("form.kind"))}">
           ${FORUM_STATUSES.map(s => `<option value="${s}"${s === status ? " selected" : ""}>${escHtml(t("forum.status." + s))}</option>`).join("")}
         </select>
-        <button type="button" class="topic-del" data-del data-id="${escHtml(x.id)}">${escHtml(t("forum.delete"))}</button>
+        <button type="button" class="topic-del" data-del data-id="${escHtml(String(x.id))}">${escHtml(t("forum.delete"))}</button>
       </div>` : "";
     return `<article class="topic">
       <div class="topic-top">
@@ -1350,8 +1405,10 @@ function renderForumList() {
       </div>
       <h3>${escHtml(x.title || "")}</h3>
       <p>${escHtml(x.body || x.text || "")}</p>
-      <div class="topic-meta">${escHtml(x.name || t("forum.anon"))} ? ${escHtml(forumDate(x.created_at || x.created))}</div>
+      <div class="topic-meta">${escHtml(x.name || t("forum.anon"))} · ${escHtml(forumDate(x.created_at || x.created))}</div>
+      ${replyHtml}
       ${admin}
+      ${replyForm}
     </article>`;
   }).join("");
 }
@@ -1366,7 +1423,7 @@ function paintForum() {
 }
 
 async function loadForum() {
-  if (HAS_SUPABASE) {
+  if (typeof HAS_SUPABASE !== "undefined" && HAS_SUPABASE) {
     try {
       const data = await sb("/rest/v1/topics?select=*&order=created_at.desc&limit=200");
       forumTopics = Array.isArray(data) ? data : [];
@@ -1396,7 +1453,7 @@ async function loadForum() {
 
 async function forumLoginCheck(pass) {
   if (pass === STATIC_ADMIN_PASSWORD) return true;
-  if (HAS_SUPABASE) {
+  if (typeof HAS_SUPABASE !== "undefined" && HAS_SUPABASE) {
     try {
       const data = await sb("/rest/v1/rpc/forum_admin", {
         method: "POST",
@@ -1468,7 +1525,7 @@ formForum.addEventListener("submit", async e => {
     formForum.reset(); setMsg(t("forum.published") + " " + t("forum.staticNote"), "ok"); hap("heavy"); paintForum();
   };
   try {
-    if (HAS_SUPABASE) {
+    if (typeof HAS_SUPABASE !== "undefined" && HAS_SUPABASE) {
       try {
         await sb("/rest/v1/topics", {
           method: "POST",
@@ -1502,7 +1559,7 @@ forumList.addEventListener("change", async e => {
   if (!topic) return;
   const prev = topic.status, next = sel.value;
   try {
-    if (HAS_SUPABASE) {
+    if (typeof HAS_SUPABASE !== "undefined" && HAS_SUPABASE) {
       try {
         const data = await sb("/rest/v1/rpc/forum_admin", {
           method: "POST",
@@ -1529,11 +1586,45 @@ forumList.addEventListener("change", async e => {
   }
 });
 forumList.addEventListener("click", async e => {
+  const rep = e.target.closest("button[data-reply-send]");
+  if (rep) {
+    const id = rep.dataset.replySend;
+    const ta = forumList.querySelector(`textarea[data-reply-text="${id}"]`);
+    const text = ta ? ta.value.trim() : "";
+    if (!text) { forumSetMsg(t("forum.replyShort"), "err"); return; }
+    rep.disabled = true;
+    try {
+      if (typeof HAS_SUPABASE !== "undefined" && HAS_SUPABASE) {
+        try {
+          const data = await sb("/rest/v1/rpc/forum_admin", {
+            method: "POST",
+            body: JSON.stringify({ action:"reply", id: String(id), reply: text, password: forumAdminPass })
+          });
+          if (!data || !data.ok) throw new Error((data && data.error) || "denied");
+          await loadForum();
+          forumSetMsg(t("forum.replySaved")); hap("heavy"); return;
+        } catch (e2) {
+          if (!(IS_STATIC || /\.github\.io$/i.test(location.hostname))) throw e2;
+        }
+      }
+      if (IS_STATIC || /\.github\.io$/i.test(location.hostname) || forumMode === "demo-static") {
+        const topic = forumTopics.find(x => String(x.id) === String(id));
+        if (topic) { topic.reply = text; topic.replied_at = new Date().toISOString(); writeLocalForum(); forumMode = "demo-static"; paintForum(); }
+      } else {
+        await apiForum({ action:"reply", id, reply: text, password: forumAdminPass });
+        await loadForum();
+      }
+      forumSetMsg(t("forum.replySaved")); hap("heavy");
+    } catch (err) {
+      forumSetMsg(t("forum.saveError") + (err && err.message ? " (" + err.message + ")" : ""), "err");
+    } finally { rep.disabled = false; }
+    return;
+  }
   const del = e.target.closest("button[data-del]");
   if (!del) return;
   if (!confirm(t("forum.confirmDelete"))) return;
   try {
-    if (HAS_SUPABASE) {
+    if (typeof HAS_SUPABASE !== "undefined" && HAS_SUPABASE) {
       try {
         const data = await sb("/rest/v1/rpc/forum_admin", {
           method: "POST",

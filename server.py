@@ -303,7 +303,7 @@ def handle_forum(payload, cfg):
         notify_forum(cfg, topic)
         return ok_json({"ok": True, "topic": topic})
 
-    if action in ("status", "delete"):
+    if action in ("status", "delete", "reply"):
         if not admin_ok(cfg, payload.get("password")):
             return 403, {"ok": False, "error": "Нужен пароль создателя"}
         topic_id = str(payload.get("id") or "").strip()
@@ -311,11 +311,18 @@ def handle_forum(payload, cfg):
             return 400, {"ok": False, "error": "Не указана тема"}
         with FORUM_LOCK:
             topics = load_forum()
-            found = next((x for x in topics if x.get("id") == topic_id), None)
+            found = next((x for x in topics if str(x.get("id")) == topic_id), None)
             if found is None:
                 return 404, {"ok": False, "error": "Тема не найдена"}
             if action == "delete":
-                topics = [x for x in topics if x.get("id") != topic_id]
+                topics = [x for x in topics if str(x.get("id")) != topic_id]
+            elif action == "reply":
+                reply = (payload.get("reply") or payload.get("text") or "").strip()[:3000]
+                if len(reply) < 1:
+                    return 400, {"ok": False, "error": "Ответ слишком короткий"}
+                found["reply"] = reply
+                found["replied_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+                found["updated"] = found["replied_at"]
             else:
                 status = str(payload.get("status") or "").strip()
                 if status not in FORUM_STATUSES:
@@ -323,7 +330,7 @@ def handle_forum(payload, cfg):
                 found["status"] = status
                 found["updated"] = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
             save_forum(topics)
-        return ok_json({"ok": True, "topic": found if action == "status" else None})
+        return ok_json({"ok": True, "topic": found if action in ("status", "reply") else None})
 
     return 400, {"ok": False, "error": "Неизвестное действие"}
 
