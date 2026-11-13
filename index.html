@@ -1163,14 +1163,18 @@ async function loadForum() {
 }
 
 async function forumLoginCheck(pass) {
+  try{window.__testLogin=forumLoginCheck}catch(_){}
+  try{window.__lc={hs:HAS_SUPABASE,is:IS_STATIC,p:pass,sp:STATIC_ADMIN_PASSWORD}}catch(_){}
   if (HAS_SUPABASE) {
     try {
       const data = await sb("/rest/v1/rpc/forum_admin", {
         method: "POST",
         body: JSON.stringify({ action: "login", password: pass })
       });
+      try{window.__lc.data=data}catch(_){}
       return !!(data && data.ok);
     } catch (e) {
+      try{window.__lc.err=String(e&&e.message||e)}catch(_){}
       return pass === STATIC_ADMIN_PASSWORD;
     }
   }
@@ -1182,6 +1186,7 @@ async function forumLoginCheck(pass) {
 forumAdminBtn.addEventListener("click", () => { forumLoginOpen = true; forumLogin.hidden = false; forumPass.focus(); });
 forumLogin.addEventListener("submit", async e => {
   e.preventDefault();
+  try{window.__sub=1}catch(_){}
   const pass = forumPass.value.trim();
   if (!pass) return;
   try {
