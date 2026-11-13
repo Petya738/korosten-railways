@@ -1176,20 +1176,26 @@ peekCreate.addEventListener("submit", async e => {
   if (title.length < 2 || text.length < 2) { setMsg(t("forum.short"), "err"); return; }
   btn.disabled = true; btn.textContent = t("forum.publishing");
   try {
+    let saved = false;
     if (HAS_SUPABASE) {
-      const data = await sb("/rest/v1/rpc/peek_admin", {
-        method: "POST",
-        body: JSON.stringify({ action:"create", password: forumAdminPass, tag, title, body: text, image_url: peekPhoto })
-      });
-      if (!data || !data.ok) throw new Error((data && data.error) || "denied");
-      await loadPeeks();
-    } else {
+      try {
+        const data = await sb("/rest/v1/rpc/peek_admin", {
+          method: "POST",
+          body: JSON.stringify({ action:"create", password: forumAdminPass, tag, title, body: text, image_url: peekPhoto })
+        });
+        if (!data || !data.ok) throw new Error((data && data.error) || "denied");
+        await loadPeeks(); saved = true;
+      } catch (e) {
+        if (!(IS_STATIC || /\.github\.io$/i.test(location.hostname))) throw e;
+      }
+    }
+    if (!saved) {
       peekItems.unshift({ id: Date.now().toString(36), tag, title, body: text, image: peekPhoto, created: new Date().toISOString() });
       peekWriteLocal(); renderCards();
     }
     peekCreate.reset(); peekPhoto = ""; peekThumb.hidden = true; peekThumbImg.removeAttribute("src");
     peekPickTxt.textContent = t("peek.pick");
-    setMsg(t("peek.published"), "ok"); hap("heavy");
+    setMsg(t("peek.published") + (!saved && HAS_SUPABASE ? " " + t("forum.staticNote") : ""), "ok"); hap("heavy");
   } catch (err) { setMsg(t("forum.saveError") + (err && err.message ? " ("+err.message+")" : ""), "err"); }
   finally { btn.disabled = false; btn.textContent = t("peek.publish"); }
 });
@@ -1200,14 +1206,20 @@ car.addEventListener("click", async e => {
     if (!peekIsAdmin() || !confirm(t("forum.confirmDelete"))) return;
     const id = del.dataset.peekDel;
     try {
+      let done = false;
       if (HAS_SUPABASE) {
-        const data = await sb("/rest/v1/rpc/peek_admin", {
-          method: "POST",
-          body: JSON.stringify({ action:"delete", id: id, password: forumAdminPass })
-        });
-        if (!data || !data.ok) throw new Error((data && data.error) || "denied");
-        await loadPeeks();
-      } else {
+        try {
+          const data = await sb("/rest/v1/rpc/peek_admin", {
+            method: "POST",
+            body: JSON.stringify({ action:"delete", id: id, password: forumAdminPass })
+          });
+          if (!data || !data.ok) throw new Error((data && data.error) || "denied");
+          await loadPeeks(); done = true;
+        } catch (e) {
+          if (!(IS_STATIC || /\.github\.io$/i.test(location.hostname))) throw e;
+        }
+      }
+      if (!done) {
         peekItems = peekItems.filter(x => String(x.id) !== String(id));
         peekWriteLocal(); renderCards();
       }
@@ -1576,8 +1588,7 @@ async function forumLoginCheck(pass) {
       });
       return !!(data && data.ok);
     } catch (e) {
-      if (IS_STATIC || /\.github\.io$/i.test(location.hostname)) return pass === STATIC_ADMIN_PASSWORD;
-      throw e;
+      return pass === STATIC_ADMIN_PASSWORD;
     }
   }
   if (IS_STATIC) return pass === STATIC_ADMIN_PASSWORD;
