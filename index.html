@@ -601,6 +601,7 @@ const I18N = {
     "status.readError": "Не удалось прочитать фото.",
     "status.attached": "Фото прикреплено",
     "status.retry": "Повторить",
+    "status.static": "Публичная версия: текст скопирован и открыт Telegram. Фото прикрепи в чате.",
 
     "sheet.follow": "Следить за обновлением",
     "sheet.done": "Ты в списке"
@@ -685,6 +686,7 @@ const I18N = {
     "status.readError": "Не вдалося прочитати фото.",
     "status.attached": "Фото прикріплено",
     "status.retry": "Повторити",
+    "status.static": "Публічна версія: текст скопійовано й відкрито Telegram. Фото прикріпи в чаті.",
 
     "sheet.follow": "Стежити за оновленням",
     "sheet.done": "Ти у списку"
@@ -899,6 +901,7 @@ const form = $("#form"), fileInput = $("#file"), attachBtn = $("#attachBtn"), at
 const thumb = $("#thumb"), thumbImg = $("#thumbImg"), removePhoto = $("#removePhoto"), attachIcon = $("#attachIcon");
 const sendBtn = $("#sendBtn"), statusEl = $("#status"), tgFallback = $("#tgFallback");
 const TEXT = $("#ftext"), NAME = $("#fname"), KIND = $("#fkind");
+const IS_STATIC = location.protocol === "file:" || /\.github\.io$/i.test(location.hostname);
 let photo = null;
 
 function setStatus(text, cls) {
@@ -952,9 +955,32 @@ form.addEventListener("submit", async e => {
   setStatus("");
   tgFallback.classList.remove("on");
 
+  const name = NAME.value.trim();
+  const kind = KIND.value;
+
+  /* На GitHub Pages нет Python-сервера: отправляем через Telegram */
+  if (IS_STATIC) {
+    const msg = kind + ": " + text + (name ? "\n— " + name : "");
+    const tgUrl = "https://t.me/urztuk?text=" + encodeURIComponent(msg);
+    tgFallback.href = tgUrl;
+    tgFallback.textContent = t("form.fallback");
+    tgFallback.classList.add("on");
+    try { window.open(tgUrl, "_blank", "noopener"); } catch (e) {}
+    try { await navigator.clipboard.writeText(msg); } catch (e) {}
+    setStatus(t("status.static"), "ok");
+    form.reset();
+    clearPhoto();
+    sendBtn.disabled = false;
+    sendBtn.textContent = t("form.sent");
+    delete statusEl.dataset.busy;
+    hap("heavy");
+    setTimeout(() => { if (sendBtn.textContent === t("form.sent")) sendBtn.textContent = t("form.send"); }, 2600);
+    return;
+  }
+
   const payload = {
-    name: NAME.value.trim(),
-    kind: KIND.value,
+    name,
+    kind,
     text,
     photo,
     page: GAME.name,
