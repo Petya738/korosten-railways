@@ -22,6 +22,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{border:0;background:none;cursor:pointer}
 img{display:block;max-width:100%}
 :focus-visible{outline:2px solid #fff;outline-offset:3px}
+[hidden]{display:none!important}
 
 /* ---------- корневой слой ---------- */
 #app{position:fixed;inset:0;background:#000;overflow:hidden;transform-origin:50% 0;
@@ -176,7 +177,8 @@ textarea.inp{resize:none;min-height:116px;display:block}
 .select-wrap::after{content:"";position:absolute;right:17px;top:50%;width:8px;height:8px;
   border-right:1.7px solid rgba(255,255,255,.6);border-bottom:1.7px solid rgba(255,255,255,.6);
   transform:translateY(-70%) rotate(45deg);pointer-events:none}
-select.inp{padding-right:42px}
+select.inp{padding-right:42px;color-scheme:dark}
+select.inp option{background:#1c1c1e;color:#fff}
 .attach{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border-radius:16px;
   background:rgba(255,255,255,.055);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.1);transition:background .25s}
 .attach-main{display:flex;align-items:center;gap:11px;flex:1;min-width:0;color:rgba(255,255,255,.6);
@@ -204,16 +206,59 @@ select.inp{padding-right:42px}
 .tg-link.on{display:block}
 .me-foot{text-align:center;font-size:11.5px;color:rgba(255,255,255,.3);padding:20px 20px 0;line-height:1.5}
 
+/* ---------- форум ---------- */
+.forum-note{margin:14px 2px 0;padding:11px 13px;border-radius:15px;font-size:12.5px;line-height:1.45;
+  color:rgba(255,255,255,.55);background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 .5px var(--line)}
+.forum-adminbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 2px 0}
+.forum-adminbtn{padding:8px 13px;border-radius:999px;font-size:12.5px;font-weight:500;
+  color:rgba(255,255,255,.7);background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 .5px var(--line)}
+.forum-adminbtn:active{transform:scale(.96)}
+.forum-login{display:flex;gap:7px;align-items:center;flex:1;min-width:190px}
+.forum-login .inp{padding:10px 12px;font-size:14px;border-radius:13px}
+.forum-loginbtn{padding:10px 13px;border-radius:13px;font-size:13px;font-weight:600;background:#fff;color:#000}
+.forum-adminstate{font-size:11.5px;color:rgba(255,255,255,.45)}
+.forum-filters{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;
+  margin:18px -22px 0;padding:0 22px 2px;scroll-snap-type:x proximity}
+.forum-filters::-webkit-scrollbar{display:none}
+.forum-filters button{flex:none;padding:8px 13px;border-radius:999px;font-size:12.5px;font-weight:500;
+  color:rgba(255,255,255,.6);background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 .5px var(--line);
+  transition:background .25s,color .25s}
+.forum-filters button.on{background:#fff;color:#000;box-shadow:none}
+.forum-list{display:grid;gap:10px;margin-top:14px}
+.topic{border-radius:22px;padding:16px 17px;background:rgba(255,255,255,.05);
+  box-shadow:inset 0 0 0 .5px var(--line)}
+.topic-top{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px}
+.badge{font-size:10.5px;font-weight:600;letter-spacing:.03em;padding:4px 9px;border-radius:999px;line-height:1.25}
+.badge.kind{background:rgba(255,255,255,.08);color:rgba(255,255,255,.68)}
+.badge.pending{background:rgba(255,190,70,.15);color:#ffd07a}
+.badge.progress{background:rgba(90,160,255,.16);color:#a6caff}
+.badge.accepted{background:rgba(70,210,130,.16);color:#93e3b7}
+.badge.declined{background:rgba(255,95,95,.16);color:#ffa3a3}
+.badge.done{background:rgba(255,255,255,.11);color:#fff}
+.topic h3{font-size:17.5px;line-height:1.22;letter-spacing:-.015em;overflow-wrap:anywhere}
+.topic p{font-size:14px;line-height:1.5;color:var(--t2);margin-top:7px;white-space:pre-wrap;overflow-wrap:anywhere}
+.topic-meta{font-size:11.5px;color:rgba(255,255,255,.35);margin-top:10px}
+.topic-admin{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:12px;
+  border-top:.5px solid var(--line);flex-wrap:wrap}
+.topic-status{padding:8px 30px 8px 11px;border-radius:11px;font-size:12.5px;background:rgba(255,255,255,.08);
+  color:#fff;border:0;appearance:none;-webkit-appearance:none;color-scheme:dark;
+  box-shadow:inset 0 0 0 .5px rgba(255,255,255,.16)}
+.topic-status option{background:#1c1c1e;color:#fff}
+.topic-del{padding:8px 12px;border-radius:11px;font-size:12.5px;font-weight:600;
+  color:#ffa3a3;background:rgba(255,95,95,.12);box-shadow:inset 0 0 0 .5px rgba(255,95,95,.25)}
+.topic-del:active{transform:scale(.96)}
+.forum-empty{text-align:center;color:rgba(255,255,255,.4);font-size:14px;padding:30px 10px}
+
 /* ---------- нижний таскбар (liquid glass) ---------- */
 .dock{position:fixed;z-index:10;left:50%;bottom:calc(var(--bot) + 14px);translate:-50% 0;
-  width:min(340px,calc(100% - 32px));height:64px;padding:5px;border-radius:999px;
-  display:grid;grid-template-columns:repeat(4,1fr);touch-action:none;
+  width:min(360px,calc(100% - 24px));height:64px;padding:5px;border-radius:999px;
+  display:grid;grid-template-columns:repeat(5,1fr);touch-action:none;
   background:rgba(38,38,40,.3);
   -webkit-backdrop-filter:blur(40px) saturate(190%);backdrop-filter:blur(40px) saturate(190%);
   box-shadow:inset 0 0 0 .5px rgba(255,255,255,.24),inset 0 1px 0 rgba(255,255,255,.18),0 14px 40px rgba(0,0,0,.6);
   transition:transform .55s var(--spr)}
 .dock.press{transform:scale(1.06)}
-.pill{position:absolute;top:5px;bottom:5px;left:5px;width:calc((100% - 10px)/4);border-radius:999px;
+.pill{position:absolute;top:5px;bottom:5px;left:5px;width:calc((100% - 10px)/5);border-radius:999px;
   background:rgba(255,255,255,.13);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.26),inset 0 1px 0 rgba(255,255,255,.2);
   transition:scale .5s var(--spr)}
 .dock.press .pill{scale:1.1}
@@ -428,8 +473,6 @@ body.sheeted .sheet{transform:none}
             <option data-i18n="coop.kindCoop">Сотрудничество</option>
             <option data-i18n="coop.kindAd">Реклама</option>
             <option data-i18n="coop.kindOffer">Предложение</option>
-            <option data-i18n="coop.kindIdea">Идея</option>
-            <option data-i18n="coop.kindBug">Баг</option>
             <option data-i18n="coop.kindOther">Другое</option>
           </select>
         </div>
@@ -461,6 +504,66 @@ body.sheeted .sheet{transform:none}
     </form>
   </section>
 
+  <!-- 5. Форум -->
+  <section class="view" id="v-forum">
+    <div class="peek-head">
+      <h1 class="lt" data-i18n="forum.h1">Форум</h1>
+      <p class="sub" data-i18n="forum.sub">Темы, вопросы и предложения проекта</p>
+    </div>
+
+    <p class="forum-note" id="forumNote" hidden></p>
+
+    <div class="forum-adminbar">
+      <button type="button" class="forum-adminbtn" id="forumAdminBtn" data-i18n="forum.adminLogin">Войти как создатель</button>
+      <form class="forum-login" id="forumLogin" hidden>
+        <input class="inp" type="password" id="forumPass" autocomplete="current-password" data-i18n-ph="forum.passPh" placeholder="Пароль создателя">
+        <button class="forum-loginbtn" type="submit" data-i18n="forum.login">Войти</button>
+      </form>
+      <span class="forum-adminstate" id="forumAdminState"></span>
+      <button type="button" class="forum-adminbtn" id="forumLogout" hidden data-i18n="forum.adminLogout">Выйти</button>
+    </div>
+
+    <form class="form-card forum-create" id="formForum" novalidate>
+      <h2 data-i18n="forum.createH">Создать тему</h2>
+      <p class="hint" data-i18n="forum.createHint">Задай вопрос, предложи идею или сообщи о баге.</p>
+
+      <div class="field">
+        <label data-i18n="form.name">Имя / ник</label>
+        <input class="inp" name="name" type="text" maxlength="60" autocomplete="nickname" data-i18n-ph="form.namePh" placeholder="Как к тебе обращаться">
+      </div>
+
+      <div class="field">
+        <label data-i18n="form.kind">Тема</label>
+        <div class="select-wrap">
+          <select class="inp" name="kind">
+            <option value="question" data-i18n="topic.question">Вопрос</option>
+            <option value="idea" data-i18n="topic.idea">Идея</option>
+            <option value="wish" data-i18n="topic.wish">Пожелание</option>
+            <option value="bug" data-i18n="topic.bug">Баг</option>
+            <option value="coop" data-i18n="topic.coop">Сотрудничество</option>
+            <option value="other" data-i18n="topic.other">Другое</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label data-i18n="forum.title">Заголовок</label>
+        <input class="inp" name="title" type="text" maxlength="120" required data-i18n-ph="forum.titlePh" placeholder="Коротко о теме">
+      </div>
+
+      <div class="field">
+        <label data-i18n="forum.text">Описание</label>
+        <textarea class="inp" name="text" maxlength="3000" required data-i18n-ph="forum.textPh" placeholder="Подробно опиши вопрос, идею или предложение…"></textarea>
+      </div>
+
+      <button class="send" type="submit" data-i18n="forum.publish">Опубликовать</button>
+      <div class="status" role="status" aria-live="polite"></div>
+    </form>
+
+    <div class="forum-filters" id="forumFilters" aria-label="Фильтр тем" data-i18n-aria="forum.filtersAria"></div>
+    <div class="forum-list" id="forumList"></div>
+  </section>
+
   <!-- Таскбар -->
   <nav class="dock" id="dock" aria-label="Навигация" data-i18n-aria="nav.aria">
     <i class="pill" id="pill"></i>
@@ -468,6 +571,7 @@ body.sheeted .sheet{transform:none}
     <button type="button" data-i18n-aria="nav.peek" aria-label="Сник пик"><svg viewBox="0 0 24 24"><path d="M8.5 3.5h7M6.5 6.5h11"/><rect class="f" x="4" y="9.5" width="16" height="11" rx="3"/></svg></button>
     <button type="button" data-i18n-aria="nav.contact" aria-label="Связь"><svg viewBox="0 0 24 24"><path class="f" d="M4.2 5.6A2.2 2.2 0 0 1 6.4 3.4h11.2a2.2 2.2 0 0 1 2.2 2.2v9.6a2.2 2.2 0 0 1-2.2 2.2H9.2l-4 3.2a.8.8 0 0 1-1.3-.6z"/></svg></button>
     <button type="button" data-i18n-aria="nav.coop" aria-label="Сотрудничество"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="13" rx="4"/><path d="M5 8.5h14M8.5 16l-2 4M15.5 16l2 4"/><circle cx="9" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1" fill="currentColor" stroke="none"/></svg></button>
+    <button type="button" data-i18n-aria="nav.forum" aria-label="Форум"><svg viewBox="0 0 24 24"><rect x="4.5" y="3" width="15" height="18" rx="3.5"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg></button>
   </nav>
 </div>
 
@@ -493,6 +597,7 @@ const I18N = {
     "nav.peek": "Сник пик",
     "nav.contact": "Связь",
     "nav.coop": "Сотрудничество",
+    "nav.forum": "Форум",
 
     "hero.eyebrow": "Roblox · железнодорожная платформа",
     "hero.sub": "Голендри, Вінниця и маршрут Кордишовка — Винница в Roblox.",
@@ -566,6 +671,44 @@ const I18N = {
     "coop.kindCoop": "Сотрудничество", "coop.kindAd": "Реклама", "coop.kindOffer": "Предложение",
     "coop.kindIdea": "Идея", "coop.kindBug": "Баг", "coop.kindOther": "Другое",
 
+    "forum.h1": "Форум",
+    "forum.sub": "Темы, вопросы и предложения проекта",
+    "forum.staticNote": "Демо-режим: темы сохраняются только в этом браузере. Полный форум с модерацией работает на локальном сервере.",
+    "forum.localOnly": "Сервер недоступен — темы сохраняются в этом браузере.",
+    "forum.adminLogin": "Войти как создатель",
+    "forum.adminLogout": "Выйти",
+    "forum.login": "Войти",
+    "forum.passPh": "Пароль создателя",
+    "forum.adminOn": "Режим создателя включён",
+    "forum.adminBad": "Неверный пароль",
+    "forum.createH": "Создать тему",
+    "forum.createHint": "Задай вопрос, предложи идею или сообщи о баге.",
+    "forum.title": "Заголовок",
+    "forum.titlePh": "Коротко о теме",
+    "forum.text": "Описание",
+    "forum.textPh": "Подробно опиши вопрос, идею или предложение…",
+    "forum.publish": "Опубликовать",
+    "forum.publishing": "Публикуем…",
+    "forum.published": "Тема опубликована",
+    "forum.empty": "Пока нет тем. Создай первую.",
+    "forum.filtersAria": "Фильтр тем",
+    "forum.filter.all": "Все",
+    "forum.delete": "Удалить",
+    "forum.confirmDelete": "Удалить тему?",
+    "forum.deleted": "Тема удалена",
+    "forum.statusChanged": "Статус обновлён",
+    "forum.saveError": "Не удалось сохранить. Проверь, что сервер запущен.",
+    "forum.short": "Заполни заголовок и описание — минимум 3 символа.",
+    "forum.anon": "аноним",
+
+    "topic.question": "Вопрос", "topic.idea": "Идея", "topic.wish": "Пожелание",
+    "topic.bug": "Баг", "topic.coop": "Сотрудничество", "topic.other": "Другое",
+    "forum.status.pending": "На рассмотрении",
+    "forum.status.progress": "В работе",
+    "forum.status.accepted": "Принято",
+    "forum.status.declined": "Отказано",
+    "forum.status.done": "Решено",
+
     "status.short": "Напиши хотя бы пару слов.",
     "status.sending": "Отправляем…",
     "status.okTg": "Готово! Сообщение ушло в Telegram.",
@@ -587,6 +730,7 @@ const I18N = {
     "nav.peek": "Снік пік",
     "nav.contact": "Зв’язок",
     "nav.coop": "Співпраця",
+    "nav.forum": "Форум",
 
     "hero.eyebrow": "Roblox · залізнична платформа",
     "hero.sub": "Голендри, Вінниця та маршрут Кордишівка — Вінниця у Roblox.",
@@ -659,6 +803,44 @@ const I18N = {
     "coop.textPh": "Опиши, що пропонуєш, і прикріпи текст співпраці…",
     "coop.kindCoop": "Співпраця", "coop.kindAd": "Реклама", "coop.kindOffer": "Пропозиція",
     "coop.kindIdea": "Ідея", "coop.kindBug": "Баг", "coop.kindOther": "Інше",
+
+    "forum.h1": "Форум",
+    "forum.sub": "Теми, питання та пропозиції проєкту",
+    "forum.staticNote": "Демо-режим: теми зберігаються лише в цьому браузері. Повний форум із модерацією працює на локальному сервері.",
+    "forum.localOnly": "Сервер недоступний — теми зберігаються в цьому браузері.",
+    "forum.adminLogin": "Увійти як творець",
+    "forum.adminLogout": "Вийти",
+    "forum.login": "Увійти",
+    "forum.passPh": "Пароль творця",
+    "forum.adminOn": "Режим творця увімкнено",
+    "forum.adminBad": "Невірний пароль",
+    "forum.createH": "Створити тему",
+    "forum.createHint": "Постав питання, запропонуй ідею або повідом про баг.",
+    "forum.title": "Заголовок",
+    "forum.titlePh": "Коротко про тему",
+    "forum.text": "Опис",
+    "forum.textPh": "Докладно опиши питання, ідею або пропозицію…",
+    "forum.publish": "Опублікувати",
+    "forum.publishing": "Публікуємо…",
+    "forum.published": "Тему опубліковано",
+    "forum.empty": "Поки немає тем. Створи першу.",
+    "forum.filtersAria": "Фільтр тем",
+    "forum.filter.all": "Усі",
+    "forum.delete": "Видалити",
+    "forum.confirmDelete": "Видалити тему?",
+    "forum.deleted": "Тему видалено",
+    "forum.statusChanged": "Статус оновлено",
+    "forum.saveError": "Не вдалося зберегти. Перевір, що сервер запущено.",
+    "forum.short": "Заповни заголовок і опис — мінімум 3 символи.",
+    "forum.anon": "анонім",
+
+    "topic.question": "Питання", "topic.idea": "Ідея", "topic.wish": "Побажання",
+    "topic.bug": "Баг", "topic.coop": "Співпраця", "topic.other": "Інше",
+    "forum.status.pending": "На розгляді",
+    "forum.status.progress": "У роботі",
+    "forum.status.accepted": "Прийнято",
+    "forum.status.declined": "Відмовлено",
+    "forum.status.done": "Вирішено",
 
     "status.short": "Напиши хоча б кілька слів.",
     "status.sending": "Надсилаємо…",
@@ -742,6 +924,7 @@ function applyLang() {
   if (open >= 0) paintSheet();
   paintCta();
   formPainters.forEach(fn => fn());
+  paintForum();
 }
 langBtns.forEach(b => b.addEventListener("click", () => {
   if (b.dataset.lang === LANG) return;
@@ -752,8 +935,8 @@ langBtns.forEach(b => b.addEventListener("click", () => {
 }));
 
 /* ===== Таскбар ===== */
-const dock = $("#dock"), pill = $("#pill"), btns = [...dock.querySelectorAll("button")], views = [$("#v-home"), $("#v-peek"), $("#v-me"), $("#v-coop")];
-const TAB_IDS = ["home", "peek", "me", "coop"];
+const dock = $("#dock"), pill = $("#pill"), btns = [...dock.querySelectorAll("button")], views = [$("#v-home"), $("#v-peek"), $("#v-me"), $("#v-coop"), $("#v-forum")];
+const TAB_IDS = ["home", "peek", "me", "coop", "forum"];
 let cur = 0;
 function go(i, first) {
   if (i === cur && !first) return;
@@ -772,7 +955,7 @@ function go(i, first) {
   }
   if (i === 1) requestAnimationFrame(tilt);
 }
-const idx = e => { const r = dock.getBoundingClientRect(); return Math.max(0, Math.min(3, Math.floor((e.clientX - r.left - 5) / ((r.width - 10) / 4)))); };
+const idx = e => { const r = dock.getBoundingClientRect(); return Math.max(0, Math.min(4, Math.floor((e.clientX - r.left - 5) / ((r.width - 10) / 5)))); };
 dock.addEventListener("pointerdown", e => { dock.setPointerCapture(e.pointerId); dock.classList.add("press"); go(idx(e)); });
 dock.addEventListener("pointermove", e => { if (dock.classList.contains("press")) go(idx(e)); });
 ["pointerup", "pointercancel"].forEach(t => dock.addEventListener(t, () => dock.classList.remove("press")));
@@ -1012,6 +1195,263 @@ function initSendForm(form) {
 }
 
 document.querySelectorAll(".send-form").forEach(initSendForm);
+
+/* ===== Форум ===== */
+const FORUM_KINDS = ["question", "idea", "wish", "bug", "coop", "other"];
+const FORUM_STATUSES = ["pending", "progress", "accepted", "declined", "done"];
+const FORUM_LS = "kr-forum";
+const STATIC_ADMIN_PASSWORD = "korosten-admin";
+const forumList = $("#forumList"), forumFilters = $("#forumFilters"), forumNote = $("#forumNote");
+const formForum = $("#formForum"), forumAdminBtn = $("#forumAdminBtn"), forumLogin = $("#forumLogin");
+const forumPass = $("#forumPass"), forumLogout = $("#forumLogout"), forumAdminState = $("#forumAdminState");
+let forumTopics = [], forumFilter = "all", forumOffline = false, forumAdminPass = "";
+try { forumAdminPass = sessionStorage.getItem("kr-admin") || ""; } catch (e) {}
+
+const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function forumDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  try {
+    return d.toLocaleString(LANG === "ua" ? "uk-UA" : "ru-RU",
+      { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch (e) { return d.toLocaleString(); }
+}
+function readLocalForum() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(FORUM_LS) || "[]");
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+function writeLocalForum() {
+  try { localStorage.setItem(FORUM_LS, JSON.stringify(forumTopics.slice(0, 500))); } catch (e) {}
+}
+async function apiForum(payload) {
+  const res = await fetch("/api/forum", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.error || "server");
+  return data;
+}
+function forumSetMsg(text, cls) {
+  forumAdminState.textContent = text || "";
+  forumAdminState.className = "forum-adminstate" + (cls ? " " + cls : "");
+}
+function paintForumNote() {
+  const local = IS_STATIC || forumOffline;
+  forumNote.hidden = !local;
+  if (!local) return;
+  forumNote.textContent = IS_STATIC ? t("forum.staticNote") : t("forum.localOnly");
+}
+function paintForumAdmin() {
+  const admin = !!forumAdminPass;
+  forumAdminBtn.hidden = admin;
+  forumLogin.hidden = admin;
+  forumLogout.hidden = !admin;
+  if (admin) forumSetMsg(t("forum.adminOn"));
+  else forumSetMsg("");
+}
+function renderForumFilters() {
+  const defs = [["all", t("forum.filter.all")]].concat(FORUM_STATUSES.map(s => [s, t("forum.status." + s)]));
+  forumFilters.innerHTML = defs.map(([k, label]) =>
+    `<button type="button" data-f="${k}" class="${forumFilter === k ? "on" : ""}">${escHtml(label)}</button>`
+  ).join("");
+}
+function renderForumList() {
+  const list = forumFilter === "all" ? forumTopics : forumTopics.filter(x => x.status === forumFilter);
+  if (!list.length) {
+    forumList.innerHTML = `<p class="forum-empty">${escHtml(t("forum.empty"))}</p>`;
+    return;
+  }
+  forumList.innerHTML = list.map(x => {
+    const kind = FORUM_KINDS.includes(x.kind) ? x.kind : "other";
+    const status = FORUM_STATUSES.includes(x.status) ? x.status : "pending";
+    const admin = forumAdminPass ? `
+      <div class="topic-admin">
+        <select class="topic-status" data-status data-id="${escHtml(x.id)}" aria-label="${escHtml(t("form.kind"))}">
+          ${FORUM_STATUSES.map(s => `<option value="${s}"${s === status ? " selected" : ""}>${escHtml(t("forum.status." + s))}</option>`).join("")}
+        </select>
+        <button type="button" class="topic-del" data-del data-id="${escHtml(x.id)}">${escHtml(t("forum.delete"))}</button>
+      </div>` : "";
+    return `<article class="topic">
+      <div class="topic-top">
+        <span class="badge kind">${escHtml(t("topic." + kind))}</span>
+        <span class="badge ${status}">${escHtml(t("forum.status." + status))}</span>
+      </div>
+      <h3>${escHtml(x.title || "")}</h3>
+      <p>${escHtml(x.text || "")}</p>
+      <div class="topic-meta">${escHtml(x.name || t("forum.anon"))} · ${escHtml(forumDate(x.created))}</div>
+      ${admin}
+    </article>`;
+  }).join("");
+}
+function paintForum() {
+  if (!forumFilters || !forumList) return;
+  renderForumFilters();
+  renderForumList();
+  paintForumAdmin();
+  paintForumNote();
+  const btn = formForum.querySelector(".send");
+  if (btn && !btn.dataset.busy) btn.textContent = t("forum.publish");
+}
+
+async function loadForum() {
+  if (IS_STATIC) {
+    forumTopics = readLocalForum();
+    forumOffline = false;
+    paintForum();
+    return;
+  }
+  try {
+    const res = await fetch("/api/forum", { cache: "no-store" });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error();
+    forumTopics = Array.isArray(data.topics) ? data.topics : [];
+    forumOffline = false;
+  } catch (e) {
+    forumTopics = readLocalForum();
+    forumOffline = true;
+  }
+  paintForum();
+}
+
+forumAdminBtn.addEventListener("click", () => {
+  forumLogin.hidden = false;
+  forumPass.focus();
+});
+forumLogin.addEventListener("submit", async e => {
+  e.preventDefault();
+  const pass = forumPass.value.trim();
+  if (!pass) return;
+  if (IS_STATIC) {
+    if (pass === STATIC_ADMIN_PASSWORD) {
+      forumAdminPass = pass;
+      try { sessionStorage.setItem("kr-admin", pass); } catch (e2) {}
+      forumPass.value = "";
+      paintForum();
+    } else {
+      forumSetMsg(t("forum.adminBad"), "err");
+    }
+    return;
+  }
+  try {
+    await apiForum({ action: "login", password: pass });
+    forumAdminPass = pass;
+    try { sessionStorage.setItem("kr-admin", pass); } catch (e2) {}
+    forumPass.value = "";
+    paintForum();
+  } catch (err) {
+    forumSetMsg(t("forum.adminBad"), "err");
+  }
+});
+forumLogout.addEventListener("click", () => {
+  forumAdminPass = "";
+  try { sessionStorage.removeItem("kr-admin"); } catch (e) {}
+  paintForum();
+});
+forumFilters.addEventListener("click", e => {
+  const b = e.target.closest("button[data-f]");
+  if (!b) return;
+  forumFilter = b.dataset.f;
+  hap("sel");
+  renderForumFilters();
+  renderForumList();
+});
+
+formForum.addEventListener("submit", async e => {
+  e.preventDefault();
+  const status = formForum.querySelector(".status");
+  const btn = formForum.querySelector(".send");
+  const title = formForum.querySelector('[name="title"]').value.trim();
+  const text = formForum.querySelector('[name="text"]').value.trim();
+  const name = formForum.querySelector('[name="name"]').value.trim();
+  const kind = formForum.querySelector('[name="kind"]').value;
+  const setMsg = (txt, cls) => {
+    status.textContent = txt || "";
+    status.className = "status" + (cls ? " " + cls : "");
+  };
+  if (title.length < 3 || text.length < 3) {
+    setMsg(t("forum.short"), "err");
+    hap("medium");
+    return;
+  }
+  btn.disabled = true;
+  btn.dataset.busy = "1";
+  btn.textContent = t("forum.publishing");
+  setMsg("");
+  try {
+    if (IS_STATIC) {
+      const topic = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        title, text, name: name || t("forum.anon"), kind,
+        status: "pending", created: new Date().toISOString()
+      };
+      forumTopics.unshift(topic);
+      writeLocalForum();
+    } else {
+      await apiForum({ action: "create", title, text, name, kind });
+    }
+    formForum.reset();
+    setMsg(t("forum.published"), "ok");
+    hap("heavy");
+    if (!IS_STATIC) await loadForum();
+    else paintForum();
+  } catch (err) {
+    setMsg(t("forum.saveError"), "err");
+    hap("medium");
+  } finally {
+    btn.disabled = false;
+    delete btn.dataset.busy;
+    btn.textContent = t("forum.publish");
+  }
+});
+
+forumList.addEventListener("change", async e => {
+  const sel = e.target.closest("select[data-status]");
+  if (!sel) return;
+  const topic = forumTopics.find(x => x.id === sel.dataset.id);
+  if (!topic) return;
+  const prev = topic.status, next = sel.value;
+  try {
+    if (IS_STATIC) {
+      topic.status = next;
+      writeLocalForum();
+      paintForum();
+    } else {
+      await apiForum({ action: "status", id: topic.id, status: next, password: forumAdminPass });
+      await loadForum();
+    }
+    forumSetMsg(t("forum.statusChanged"));
+    hap("sel");
+  } catch (err) {
+    sel.value = prev;
+    forumSetMsg(t("forum.saveError"), "err");
+  }
+});
+forumList.addEventListener("click", async e => {
+  const del = e.target.closest("button[data-del]");
+  if (!del) return;
+  if (!confirm(t("forum.confirmDelete"))) return;
+  try {
+    if (IS_STATIC) {
+      forumTopics = forumTopics.filter(x => x.id !== del.dataset.id);
+      writeLocalForum();
+      paintForum();
+    } else {
+      await apiForum({ action: "delete", id: del.dataset.id, password: forumAdminPass });
+      await loadForum();
+    }
+    forumSetMsg(t("forum.deleted"));
+    hap("heavy");
+  } catch (err) {
+    forumSetMsg(t("forum.saveError"), "err");
+  }
+});
+
+loadForum();
 
 /* ===== Старт ===== */
 applyLang();

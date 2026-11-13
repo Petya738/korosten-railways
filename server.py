@@ -11,6 +11,7 @@ Korosten Railways — локальный сервер сайта + приём и
 """
 
 import base64
+import hmac
 import json
 import mimetypes
 import os
@@ -21,18 +22,33 @@ import urllib.error
 import urllib.request
 import uuid
 import webbrowser
+from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(ROOT, "config.json")
 INBOX = os.path.join(ROOT, "inbox")
+FORUM_PATH = os.path.join(ROOT, "forum.json")
+FORUM_LOCK = threading.Lock()
 MAX_BODY = 14 * 1024 * 1024  # ~14 МБ JSON (фото до 8 МБ превращается в ~10.7 МБ base64)
+
+FORUM_KINDS = ("question", "idea", "wish", "bug", "coop", "other")
+FORUM_STATUSES = ("pending", "progress", "accepted", "declined", "done")
+FORUM_KIND_LABELS = {
+    "question": "Вопрос", "idea": "Идея", "wish": "Пожелание",
+    "bug": "Баг", "coop": "Сотрудничество", "other": "Другое",
+}
+FORUM_STATUS_LABELS = {
+    "pending": "На рассмотрении", "progress": "В работе",
+    "accepted": "Принято", "declined": "Отказано", "done": "Решено",
+}
 
 DEFAULT_CONFIG = {
     "port": 8787,
     "bot_token": "",
     "chat_id": "",
-    "note": "Вставь токен бота от @BotFather и свой chat_id. chat_id можно узнать у @userinfobot."
+    "admin_password": "korosten-admin",
+    "note": "Вставь токен бота от @BotFather и свой chat_id. chat_id можно узнать у @userinfobot. Пароль создателя форума — admin_password."
 }
 
 
@@ -203,6 +219,115 @@ def handle_send(payload, cfg):
     return ok_json(result)
 
 
+def load_forum():
+    try:
+        with open(FORUM_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (FileNotFoundError, ValueError, OSError):
+        return []
+    if isinstance(data, dict) and isinstance(data.get("topics"), list):
+        return data["topics"]
+    return []
+
+
+def save_forum(topics):
+    tmp = FORUM_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"topics": topics}, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, FORUM_PATH)
+
+
+def admin_ok(cfg, password):
+    expected = str(cfg.get("admin_password") or "")
+    given = str(password or "")
+    if not expected or not given:
+        return False
+    return hmac.compare_digest(expected, given)
+
+
+def notify_forum(cfg, topic):
+    token = str(cfg.get("bot_token") or "").strip()
+    chat_id = str(cfg.get("chat_id") or "").strip()
+    if not token or not chat_id:
+        return
+    text = "📝 Новая тема на форуме · %s\n\n%s\n\n%s\n\n— %s\n%s" % (
+        FORUM_KIND_LABELS.get(topic.get("kind"), "Другое"),
+        topic.get("title", ""),
+        topic.get("text", ""),
+        topic.get("name", "аноним"),
+        topic.get("created", ""),
+    )
+    try:
+        tg_multipart(token, "sendMessage", {
+            "chat_id": chat_id,
+            "text": text,
+            "disable_web_page_preview": "true",
+        })
+    except Exception as e:
+        print("[forum] telegram:", repr(e))
+
+
+def handle_forum(payload, cfg):
+    if not isinstance(payload, dict):
+        return 400, {"ok": False, "error": "Неверный формат данных"}
+    action = str(payload.get("action") or "create").strip()
+
+    if action == "login":
+        if admin_ok(cfg, payload.get("password")):
+            return ok_json({"ok": True})
+        return 403, {"ok": False, "error": "Неверный пароль"}
+
+    if action == "create":
+        title = (payload.get("title") or "").strip()[:120]
+        text = (payload.get("text") or "").strip()[:3000]
+        if len(title) < 3 or len(text) < 3:
+            return 400, {"ok": False, "error": "Слишком короткая тема"}
+        kind = str(payload.get("kind") or "other").strip()
+        if kind not in FORUM_KINDS:
+            kind = "other"
+        name = (payload.get("name") or "").strip()[:60] or "аноним"
+        topic = {
+            "id": uuid.uuid4().hex[:10],
+            "title": title,
+            "text": text,
+            "kind": kind,
+            "name": name,
+            "status": "pending",
+            "created": datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        }
+        with FORUM_LOCK:
+            topics = load_forum()
+            topics.insert(0, topic)
+            topics = topics[:500]
+            save_forum(topics)
+        notify_forum(cfg, topic)
+        return ok_json({"ok": True, "topic": topic})
+
+    if action in ("status", "delete"):
+        if not admin_ok(cfg, payload.get("password")):
+            return 403, {"ok": False, "error": "Нужен пароль создателя"}
+        topic_id = str(payload.get("id") or "").strip()
+        if not topic_id:
+            return 400, {"ok": False, "error": "Не указана тема"}
+        with FORUM_LOCK:
+            topics = load_forum()
+            found = next((x for x in topics if x.get("id") == topic_id), None)
+            if found is None:
+                return 404, {"ok": False, "error": "Тема не найдена"}
+            if action == "delete":
+                topics = [x for x in topics if x.get("id") != topic_id]
+            else:
+                status = str(payload.get("status") or "").strip()
+                if status not in FORUM_STATUSES:
+                    return 400, {"ok": False, "error": "Неизвестный статус"}
+                found["status"] = status
+                found["updated"] = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+            save_forum(topics)
+        return ok_json({"ok": True, "topic": found if action == "status" else None})
+
+    return 400, {"ok": False, "error": "Неизвестное действие"}
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=ROOT, **kwargs)
@@ -220,10 +345,16 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path.startswith("/api/status"):
             cfg = load_config()
             return self.json_response({"ok": True, "bot": bool(cfg.get("bot_token") and cfg.get("chat_id"))})
+        if self.path.startswith("/api/forum"):
+            with FORUM_LOCK:
+                topics = load_forum()
+            return self.json_response({"ok": True, "topics": topics})
         super().do_GET()
 
     def do_POST(self):
-        if not self.path.startswith("/api/send"):
+        is_send = self.path.startswith("/api/send")
+        is_forum = self.path.startswith("/api/forum")
+        if not (is_send or is_forum):
             self.send_error(404, "Not found")
             return
 
@@ -241,10 +372,13 @@ class Handler(SimpleHTTPRequestHandler):
             return self.json_response({"ok": False, "error": "Не удалось разобрать запрос"}, 400)
 
         try:
-            code, data = handle_send(payload, load_config())
+            if is_forum:
+                code, data = handle_forum(payload, load_config())
+            else:
+                code, data = handle_send(payload, load_config())
             return self.json_response(data, code)
         except Exception as e:
-            print("[send] ошибка:", repr(e))
+            print("[api] ошибка:", repr(e))
             return self.json_response({"ok": False, "error": "Внутренняя ошибка сервера"}, 500)
 
     def json_response(self, data, code=200):

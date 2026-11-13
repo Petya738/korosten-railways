@@ -1,5 +1,7 @@
 config.json
 inbox/
+forum.json
+forum.json.tmp
 __pycache__/
 *.pyc
 .DS_Store
