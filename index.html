@@ -1237,8 +1237,11 @@ const homeView = $("#v-home");
 $("#heroScroll").addEventListener("click", () => homeView.scrollTo({ top: window.innerHeight * .55, behavior: "smooth" }));
 
 
-/* ===== ????? ????????? ===== */
+/* ===== Общие настройки ===== */
 const IS_STATIC = location.protocol === "file:" || /\.github\.io$/i.test(location.hostname);
+const SUPABASE_URL = "https://tugulwjegwdjezxyokpx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_yPwd608pxQvT1kZK8Zqtrg_qltevxX3";
+const HAS_SUPABASE = /^https?:/.test(SUPABASE_URL) && SUPABASE_KEY && !SUPABASE_URL.includes("PASTE");
 
 const FORUM_KINDS = ["question", "idea", "wish", "bug", "coop", "other"];
 const FORUM_STATUSES = ["pending", "progress", "accepted", "declined", "done"];
