@@ -1344,11 +1344,16 @@ async function loadForum() {
 
 async function forumLoginCheck(pass) {
   if (HAS_SUPABASE) {
-    const data = await sb("/rest/v1/rpc/forum_admin", {
-      method: "POST",
-      body: JSON.stringify({ action: "login", password: pass })
-    });
-    return !!(data && data.ok);
+    try {
+      const data = await sb("/rest/v1/rpc/forum_admin", {
+        method: "POST",
+        body: JSON.stringify({ action: "login", password: pass })
+      });
+      return !!(data && data.ok);
+    } catch (e) {
+      if (IS_STATIC || /\.github\.io$/i.test(location.hostname)) return pass === STATIC_ADMIN_PASSWORD;
+      throw e;
+    }
   }
   if (IS_STATIC) return pass === STATIC_ADMIN_PASSWORD;
   await apiForum({ action: "login", password: pass });
@@ -1394,19 +1399,27 @@ formForum.addEventListener("submit", async e => {
   const setMsg = (txt, cls) => { status.textContent = txt || ""; status.className = "status" + (cls ? " " + cls : ""); };
   if (title.length < 3 || text.length < 3) { setMsg(t("forum.short"), "err"); hap("medium"); return; }
   btn.disabled = true; btn.dataset.busy = "1"; btn.textContent = t("forum.publishing"); setMsg("");
+  const saveLocal = () => {
+    const topic = { id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), title, text, name, kind: FORUM_KINDS.includes(kind)?kind:"other", status:"pending", created: new Date().toISOString() };
+    forumTopics.unshift(topic); writeLocalForum(); forumMode = "demo-static";
+    formForum.reset(); setMsg(t("forum.published") + " " + t("forum.staticNote"), "ok"); hap("heavy"); paintForum();
+  };
   try {
     if (HAS_SUPABASE) {
-      await sb("/rest/v1/topics", {
-        method: "POST",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({ title, body: text, name, kind: FORUM_KINDS.includes(kind)?kind:"other", status: "pending" })
-      });
-      formForum.reset(); setMsg(t("forum.published"), "ok"); hap("heavy");
-      await loadForum();
+      try {
+        await sb("/rest/v1/topics", {
+          method: "POST",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify({ title, body: text, name, kind: FORUM_KINDS.includes(kind)?kind:"other", status: "pending" })
+        });
+        formForum.reset(); setMsg(t("forum.published"), "ok"); hap("heavy");
+        await loadForum();
+      } catch (e) {
+        if (IS_STATIC || /\.github\.io$/i.test(location.hostname)) { saveLocal(); }
+        else { throw e; }
+      }
     } else if (IS_STATIC) {
-      const topic = { id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), title, text, name, kind, status:"pending", created: new Date().toISOString() };
-      forumTopics.unshift(topic); writeLocalForum();
-      formForum.reset(); setMsg(t("forum.published"), "ok"); hap("heavy"); paintForum();
+      saveLocal();
     } else {
       await apiForum({ action:"create", title, text, name, kind });
       formForum.reset(); setMsg(t("forum.published"), "ok"); hap("heavy"); await loadForum();
@@ -1427,14 +1440,21 @@ forumList.addEventListener("change", async e => {
   const prev = topic.status, next = sel.value;
   try {
     if (HAS_SUPABASE) {
-      const data = await sb("/rest/v1/rpc/forum_admin", {
-        method: "POST",
-        body: JSON.stringify({ action:"status", id: String(topic.id), status: next, password: forumAdminPass })
-      });
-      if (!data || !data.ok) throw new Error((data && data.error) || "denied");
-      await loadForum();
-    } else if (IS_STATIC) {
-      topic.status = next; writeLocalForum(); paintForum();
+      try {
+        const data = await sb("/rest/v1/rpc/forum_admin", {
+          method: "POST",
+          body: JSON.stringify({ action:"status", id: String(topic.id), status: next, password: forumAdminPass })
+        });
+        if (!data || !data.ok) throw new Error((data && data.error) || "denied");
+        await loadForum();
+        forumSetMsg(t("forum.statusChanged")); hap("sel");
+        return;
+      } catch (e) {
+        if (!(IS_STATIC || /\.github\.io$/i.test(location.hostname))) throw e;
+      }
+    }
+    if (IS_STATIC || /\.github\.io$/i.test(location.hostname) || forumMode === "demo-static") {
+      topic.status = next; writeLocalForum(); forumMode = "demo-static"; paintForum();
     } else {
       await apiForum({ action:"status", id: topic.id, status: next, password: forumAdminPass });
       await loadForum();
@@ -1451,15 +1471,22 @@ forumList.addEventListener("click", async e => {
   if (!confirm(t("forum.confirmDelete"))) return;
   try {
     if (HAS_SUPABASE) {
-      const data = await sb("/rest/v1/rpc/forum_admin", {
-        method: "POST",
-        body: JSON.stringify({ action:"delete", id: String(del.dataset.id), password: forumAdminPass })
-      });
-      if (!data || !data.ok) throw new Error((data && data.error) || "denied");
-      await loadForum();
-    } else if (IS_STATIC) {
+      try {
+        const data = await sb("/rest/v1/rpc/forum_admin", {
+          method: "POST",
+          body: JSON.stringify({ action:"delete", id: String(del.dataset.id), password: forumAdminPass })
+        });
+        if (!data || !data.ok) throw new Error((data && data.error) || "denied");
+        await loadForum();
+        forumSetMsg(t("forum.deleted")); hap("heavy");
+        return;
+      } catch (e) {
+        if (!(IS_STATIC || /\.github\.io$/i.test(location.hostname))) throw e;
+      }
+    }
+    if (IS_STATIC || /\.github\.io$/i.test(location.hostname) || forumMode === "demo-static") {
       forumTopics = forumTopics.filter(x => String(x.id) !== String(del.dataset.id));
-      writeLocalForum(); paintForum();
+      writeLocalForum(); forumMode = "demo-static"; paintForum();
     } else {
       await apiForum({ action:"delete", id: del.dataset.id, password: forumAdminPass });
       await loadForum();
