@@ -1028,7 +1028,7 @@ const peekLogout = $("#peekLogout"), peekAdminState = $("#peekAdminState");
 const peekFile = peekCreate.querySelector(".peek-file"), peekPick = peekCreate.querySelector(".peek-pick");
 const peekPickTxt = peekCreate.querySelector(".peek-pick-txt"), peekThumb = peekCreate.querySelector(".peek-thumb");
 const peekThumbImg = peekCreate.querySelector(".peek-thumb-img"), peekRemove = peekCreate.querySelector(".peek-remove");
-let cards = [], dt = [], peekTimer = null, peekPauseUntil = 0, peekPhoto = "";
+let cards = [], dt = [], peekTimer = null, peekPauseUntil = 0, peekPhoto = "", peekLoginOpen = false;
 const peekIsAdmin = () => !!(typeof forumAdminPass !== "undefined" && forumAdminPass);
 
 function peekReadLocal() {
@@ -1126,12 +1126,12 @@ async function loadPeeks() {
 function paintPeekAdmin() {
   const admin = peekIsAdmin();
   peekAdminBtn.hidden = admin;
-  peekLogin.hidden = admin;
+  peekLogin.hidden = admin ? true : !peekLoginOpen;
   peekLogout.hidden = !admin;
   peekCreate.hidden = !admin;
-  if (admin) peekAdminState.textContent = t("forum.adminOn"); else peekAdminState.textContent = "";
+  if (admin) { peekAdminState.textContent = t("forum.adminOn"); peekLoginOpen = false; }
 }
-peekAdminBtn.addEventListener("click", () => { peekLogin.hidden = false; peekPass.focus(); });
+peekAdminBtn.addEventListener("click", () => { peekLoginOpen = true; peekLogin.hidden = false; peekPass.focus(); });
 peekLogin.addEventListener("submit", async e => {
   e.preventDefault();
   const pass = peekPass.value.trim(); if (!pass) return;
@@ -1140,6 +1140,7 @@ peekLogin.addEventListener("submit", async e => {
     if (!ok) throw new Error("bad");
     forumAdminPass = pass;
     try { sessionStorage.setItem("kr-admin", pass); } catch (e2) {}
+    peekLoginOpen = false;
     peekPass.value = "";
     paintPeekAdmin(); if (typeof paintForum === "function") paintForum();
     renderCards();
@@ -1147,6 +1148,7 @@ peekLogin.addEventListener("submit", async e => {
 });
 peekLogout.addEventListener("click", () => {
   forumAdminPass = "";
+  peekLoginOpen = false;
   try { sessionStorage.removeItem("kr-admin"); } catch (e2) {}
   paintPeekAdmin(); if (typeof paintForum === "function") paintForum();
   renderCards();
@@ -1444,7 +1446,7 @@ const STATIC_ADMIN_PASSWORD = "Petya1028";
 const forumList = $("#forumList"), forumFilters = $("#forumFilters"), forumNote = $("#forumNote");
 const formForum = $("#formForum"), forumAdminBtn = $("#forumAdminBtn"), forumLogin = $("#forumLogin");
 const forumPass = $("#forumPass"), forumLogout = $("#forumLogout"), forumAdminState = $("#forumAdminState");
-let forumTopics = [], forumFilter = "all", forumMode = "demo", forumAdminPass = "";
+let forumTopics = [], forumFilter = "all", forumMode = "demo", forumAdminPass = "", forumLoginOpen = false;
 try { forumAdminPass = sessionStorage.getItem("kr-admin") || ""; } catch (e) {}
 
 const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -1502,9 +1504,9 @@ function paintForumNote() {
 function paintForumAdmin() {
   const admin = !!forumAdminPass;
   forumAdminBtn.hidden = admin;
-  forumLogin.hidden = admin;
+  forumLogin.hidden = admin ? true : !forumLoginOpen;
   forumLogout.hidden = !admin;
-  if (admin) forumSetMsg(t("forum.adminOn")); else forumSetMsg("");
+  if (admin) { forumSetMsg(t("forum.adminOn")); forumLoginOpen = false; }
 }
 function renderForumFilters() {
   const defs = [["all", t("forum.filter.all")]].concat(FORUM_STATUSES.map(s => [s, t("forum.status." + s)]));
@@ -1596,7 +1598,7 @@ async function forumLoginCheck(pass) {
   return true;
 }
 
-forumAdminBtn.addEventListener("click", () => { forumLogin.hidden = false; forumPass.focus(); });
+forumAdminBtn.addEventListener("click", () => { forumLoginOpen = true; forumLogin.hidden = false; forumPass.focus(); });
 forumLogin.addEventListener("submit", async e => {
   e.preventDefault();
   const pass = forumPass.value.trim();
@@ -1606,12 +1608,14 @@ forumLogin.addEventListener("submit", async e => {
     if (!ok) throw new Error("bad");
     forumAdminPass = pass;
     try { sessionStorage.setItem("kr-admin", pass); } catch (e2) {}
+    forumLoginOpen = false;
     forumPass.value = "";
     paintForum();
   } catch (err) { forumSetMsg(t("forum.adminBad"), "err"); }
 });
 forumLogout.addEventListener("click", () => {
   forumAdminPass = "";
+  forumLoginOpen = false;
   try { sessionStorage.removeItem("kr-admin"); } catch (e) {}
   paintForum();
 });
