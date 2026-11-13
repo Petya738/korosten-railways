@@ -11,7 +11,7 @@
 - Маршрут: Кордишовка — Винница
 - Стиль: чёрно-белая железная дорога, тёмное «стекло», интерфейс как в iOS
 - Языки: RU / UA
-- Темы: тёмная и светлая
+- Тема: тёмная
 
 ## Что отдать ИИ
 
@@ -19,7 +19,7 @@
 
 - `index.html`
 - `assets/hero.jpg`
-- скриншоты сайта (главная, сник пик, связь)
+- скриншоты сайта (главная, сник пик, связь, сотрудничество)
 - этот файл
 
 **Не отдавай:** `config.json`, папку `inbox`, личные фото и файлы из `Downloads`.
@@ -29,8 +29,8 @@
 1. **0–2 с.** Чёрный экран. Звук проходящего поезда. Появляется белый текст: `KOROSTEN RAILWAYS`.
 2. **2–5 с.** Ч/б кадр путей с фонового фото, медленный проезд камеры вперёд.
 3. **5–9 с.** Карточки: `ГОЛЕНДРИ · готовая станция`, `ВІННИЦЯ · в планах`, `КОРДИШОВКА — ВИННИЦА · маршрут`.
-4. **9–13 с.** Телефон в руке: переключение тёмной/светлой темы и языка RU/UA. Крупно — «стеклянный» интерфейс.
-5. **13–16 с.** Экран «Связь»: `@urztuk`, форма «Идея, пожелание или баг».
+4. **9–13 с.** Телефон в руке: нижний таскбар с четырьмя вкладками и переключение языка RU/UA. Крупно — «стеклянный» интерфейс.
+5. **13–16 с.** Экран «Связь»: `@urztuk`, форма «Идея, пожелание или баг»; затем вкладка «Сотрудничество» и кнопка «Следить за обновлением» → `t.me/KorostenRailways`.
 6. **16–20 с.** Логотип, `KOROSTEN RAILWAYS`, `t.me/urztuk`, URL сайта. Кнопка/подпись: «Смотри проект».
 
 ## Промпт для видео-ИИ (английский)
@@ -41,7 +41,7 @@ Visual style: monochrome, grayscale, dark glass UI, Apple-like minimal design, r
 Shots:
 1) slow dolly along railway tracks at a station, overhead catenary wires, overcast sky;
 2) dark UI cards sliding in with station names "Holendry", "Vinnytsia", route "Kordyshivka — Vinnytsia";
-3) close-up of a smartphone with a glass bottom tab bar, switching from dark to light theme;
+3) close-up of a smartphone with a glass bottom tab bar with four icons; language switch RU/UA;
 4) final title card "KOROSTEN RAILWAYS" with Telegram "@urztuk".
 Camera: smooth cinematic movement, shallow depth of field, subtle film grain.
 Audio: distant train rumble, rail clicks, soft minimal electronic pulse.
