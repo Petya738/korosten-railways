@@ -56,7 +56,7 @@ body.sheeted #app{transform:scale(.92) translateY(calc(var(--top) + 6px));border
 /* ---------- главная: hero ---------- */
 .hero{position:relative;min-height:min(76vh,620px);display:flex;align-items:flex-end;overflow:hidden;
   border-radius:0 0 40px 40px;isolation:isolate}
-.hero-bg{position:absolute;inset:-2%;background:url("assets/hero.jpg") center 42%/cover no-repeat;
+.hero-bg{position:absolute;inset:-2%;background:url("assets/hero.png") center 42%/cover no-repeat;
   filter:grayscale(1) contrast(1.08) brightness(.74);transform:scale(1.02);z-index:-2}
 .hero::before{content:"";position:absolute;inset:0;z-index:-1;
   background:
@@ -119,17 +119,24 @@ body.sheeted #app{transform:scale(.92) translateY(calc(var(--top) + 6px));border
   margin:26px -22px 0;padding:0 22px;scroll-padding:0 22px}
 .car::-webkit-scrollbar{display:none}
 .card{position:relative;flex:none;width:min(80vw,336px);height:min(112vw,468px);scroll-snap-align:start;overflow:hidden;
-  border-radius:32px;background:#000;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.16),0 14px 34px rgba(0,0,0,.45);
+  border-radius:32px;background:#000 center/cover no-repeat;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.16),0 14px 34px rgba(0,0,0,.45);
   padding:22px;display:flex;flex-direction:column;justify-content:flex-end;text-align:left;
   transition:transform .5s var(--spr)}
+.card.has-img::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 0%,rgba(0,0,0,.18) 35%,rgba(0,0,0,.72) 100%);pointer-events:none}
 .card:active{transform:scale(.97)!important;transition-duration:.12s}
 .card .num{position:absolute;top:16px;right:16px;z-index:1;width:34px;height:34px;border-radius:50%;
   display:grid;place-items:center;background:rgba(255,255,255,.06);
   -webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%);
   box-shadow:inset 0 0 0 .5px rgba(255,255,255,.18);font-size:11px;font-weight:600;color:rgba(255,255,255,.55)}
-.tag{position:relative;color:rgba(255,255,255,.55);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
-.ct{position:relative;font-weight:700;font-size:27px;letter-spacing:-.03em;margin:5px 0 7px;line-height:1.05}
-.cd{position:relative;color:rgba(255,255,255,.58);font-size:14px;line-height:1.38}
+.tag{position:relative;z-index:1;color:rgba(255,255,255,.72);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
+.ct{position:relative;z-index:1;font-weight:700;font-size:27px;letter-spacing:-.03em;margin:5px 0 7px;line-height:1.05}
+.cd{position:relative;z-index:1;color:rgba(255,255,255,.7);font-size:14px;line-height:1.38}
+.card-del{position:absolute;top:14px;left:14px;z-index:2;width:34px;height:34px;border-radius:50%;
+  display:grid;place-items:center;background:rgba(255,80,80,.85);color:#fff;
+  box-shadow:inset 0 0 0 .5px rgba(255,255,255,.2)}
+.card-del svg{width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round}
+#peekCreate{margin-top:14px}
+#peekAdminBar{margin-top:14px}
 .dots{display:flex;justify-content:center;gap:7px;margin-top:22px}
 .dots i{width:7px;height:7px;border-radius:4px;background:var(--t3);transition:width .45s var(--ios),background .3s}
 .dots i.on{width:20px;background:#fff}
@@ -370,9 +377,54 @@ body.sheeted .sheet{transform:none}
       <h1 class="lt" data-i18n="peek.h1">Сник пик</h1>
       <p class="sub" data-i18n="peek.sub">Что готовим для проекта</p>
     </div>
+
+    <div class="forum-adminbar" id="peekAdminBar">
+      <button type="button" class="forum-adminbtn" id="peekAdminBtn" data-i18n="forum.adminLogin">Войти как создатель</button>
+      <form class="forum-login" id="peekLogin" hidden>
+        <input class="inp" type="password" id="peekPass" autocomplete="current-password" data-i18n-ph="forum.passPh" placeholder="Пароль создателя">
+        <button class="forum-loginbtn" type="submit" data-i18n="forum.login">Войти</button>
+      </form>
+      <span class="forum-adminstate" id="peekAdminState"></span>
+      <button type="button" class="forum-adminbtn" id="peekLogout" hidden data-i18n="forum.adminLogout">Выйти</button>
+    </div>
+
+    <form class="form-card" id="peekCreate" hidden novalidate>
+      <h2 data-i18n="peek.createH">Добавить карточку</h2>
+      <p class="hint" data-i18n="peek.createHint">Фото, заголовок и что добавлено/изменено.</p>
+      <div class="field">
+        <label data-i18n="peek.label">Метка</label>
+        <input class="inp" name="tag" type="text" maxlength="40" data-i18n-ph="peek.labelPh" placeholder="Например: Добавлено">
+      </div>
+      <div class="field">
+        <label data-i18n="forum.title">Заголовок</label>
+        <input class="inp" name="title" type="text" maxlength="80" required data-i18n-ph="forum.titlePh" placeholder="Коротко о карточке">
+      </div>
+      <div class="field">
+        <label data-i18n="forum.text">Описание</label>
+        <textarea class="inp" name="text" maxlength="500" required data-i18n-ph="peek.textPh" placeholder="Что добавлено или изменено…"></textarea>
+      </div>
+      <div class="field">
+        <label data-i18n="form.photo">Фото</label>
+        <input type="file" class="peek-file" accept="image/*" hidden>
+        <div class="attach">
+          <button class="attach-main peek-pick" type="button">
+            <span class="plus peek-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
+            <span class="txt peek-pick-txt" data-i18n="peek.pick">Выбрать фото</span>
+          </button>
+          <span class="thumb peek-thumb" hidden>
+            <img class="peek-thumb-img" alt="">
+            <button type="button" class="remove-photo peek-remove" aria-label="Убрать фото"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2 2 12"/></svg></button>
+          </span>
+        </div>
+      </div>
+      <button class="send" type="submit" data-i18n="peek.publish">Опубликовать карточку</button>
+      <div class="status peek-status" role="status" aria-live="polite"></div>
+    </form>
+
+    <p class="forum-empty" id="peekEmpty" hidden data-i18n="peek.empty">Пока нет карточек.</p>
     <div class="car" id="car"></div>
     <div class="dots" id="dots"></div>
-    <p class="peek-foot" data-i18n="peek.foot">Листай карточки и нажимай, чтобы узнать подробнее.</p>
+    <p class="peek-foot" data-i18n="peek.foot">Карточки сменяются автоматически. Нажми, чтобы узнать подробнее.</p>
   </section>
 
   <!-- 3. Связь -->
@@ -637,8 +689,19 @@ const I18N = {
     "plans.p2": "Часть контента показываем во вкладке <b>«Сник пик»</b>. Идеи и баги — во вкладке <b>«Связь»</b>.",
 
     "peek.h1": "Сник пик",
-    "peek.sub": "Что готовим для проекта",
-    "peek.foot": "Листай карточки и нажимай, чтобы узнать подробнее.",
+    "peek.sub": "Обновления и добавления проекта",
+    "peek.foot": "Карточки сменяются автоматически. Нажми, чтобы узнать подробнее.",
+    "peek.empty": "Пока нет карточек.",
+    "peek.createH": "Добавить карточку",
+    "peek.createHint": "Фото, заголовок и описание того, что добавлено.",
+    "peek.label": "Метка",
+    "peek.labelPh": "Например: Добавлено",
+    "peek.textPh": "Что добавлено или изменено…",
+    "peek.pick": "Выбрать фото",
+    "peek.publish": "Опубликовать карточку",
+    "peek.published": "Карточка добавлена",
+    "peek.deleted": "Карточка удалена",
+    "peek.needPhoto": "Добавь фото для карточки.",
 
     "me.h1": "На связи",
     "me.handle": "Korosten Railways · @urztuk",
@@ -770,8 +833,19 @@ const I18N = {
     "plans.p2": "Частину контенту показуємо у вкладці <b>«Снік пік»</b>. Ідеї та баги — у вкладці <b>«Зв’язок»</b>.",
 
     "peek.h1": "Снік пік",
-    "peek.sub": "Що готуємо для проєкту",
-    "peek.foot": "Гортайте картки й натискайте, щоб дізнатися більше.",
+    "peek.sub": "Оновлення та додавання проєкту",
+    "peek.foot": "Картки змінюються автоматично. Натисни, щоб дізнатися більше.",
+    "peek.empty": "Поки немає карток.",
+    "peek.createH": "Додати картку",
+    "peek.createHint": "Фото, заголовок і опис того, що додано.",
+    "peek.label": "Мітка",
+    "peek.labelPh": "Наприклад: Додано",
+    "peek.textPh": "Що додано або змінено…",
+    "peek.pick": "Обрати фото",
+    "peek.publish": "Опублікувати картку",
+    "peek.published": "Картку додано",
+    "peek.deleted": "Картку видалено",
+    "peek.needPhoto": "Додай фото для картки.",
 
     "me.h1": "На зв’язку",
     "me.handle": "Korosten Railways · @urztuk",
@@ -863,32 +937,7 @@ try { const saved = localStorage.getItem("kr-lang"); if (saved === "ua" || saved
 const t = k => (I18N[LANG] && I18N[LANG][k]) || I18N.ru[k] || k;
 const tr = v => typeof v === "string" ? v : (v[LANG] || v.ru || "");
 
-const PEEKS = [
-  {
-    tag: { ru: "Готовая станция", ua: "Готова станція" },
-    t: { ru: "Голендри", ua: "Голендри" },
-    d: { ru: "Первая готовая станция проекта: пути, платформы и рабочее движение. База для маршрута Кордишовка — Винница.",
-         ua: "Перша готова станція проєкту: колії, платформи та робочий рух. База для маршруту Кордишівка — Вінниця." }
-  },
-  {
-    tag: { ru: "В планах", ua: "У планах" },
-    t: { ru: "Вінниця", ua: "Вінниця" },
-    d: { ru: "Следующая крупная станция. Готовим путевое развитие, платформы и подходы к городу.",
-         ua: "Наступна велика станція. Готуємо колійний розвиток, платформи та підходи до міста." }
-  },
-  {
-    tag: { ru: "Маршрут", ua: "Маршрут" },
-    t: { ru: "Кордишовка — Винница", ua: "Кордишівка — Вінниця" },
-    d: { ru: "Первый маршрут проекта: расписание, светофоры и движение поездов между станциями.",
-         ua: "Перший маршрут проєкту: розклад, світлофори та рух поїздів між станціями." }
-  },
-  {
-    tag: { ru: "Подвижной состав", ua: "Рухомий склад" },
-    t: { ru: "Электровозы и тепловозы", ua: "Електровози та тепловози" },
-    d: { ru: "Машины, которые будут работать на линии. Прорабатываем кабины, токоприёмники и звуки движения.",
-         ua: "Машини, які працюватимуть на лінії. Пропрацьовуємо кабіни, струмоприймачі та звуки руху." }
-  }
-];
+let peekItems = [];
 
 document.title = GAME.name;
 
@@ -922,6 +971,8 @@ function applyLang() {
   langBtns.forEach(b => b.classList.toggle("on", b.dataset.lang === LANG));
   renderCards();
   if (open >= 0) paintSheet();
+  paintPeekAdmin();
+  if (peekPickTxt && !peekPhoto) peekPickTxt.textContent = t("peek.pick");
   paintCta();
   formPainters.forEach(fn => fn());
   paintForum();
@@ -953,7 +1004,7 @@ function go(i, first) {
     ], { duration: 520, easing: "cubic-bezier(.32,.72,0,1)" });
     hap("sel");
   }
-  if (i === 1) requestAnimationFrame(tilt);
+  if (i === 1) { requestAnimationFrame(tilt); startPeekAuto(); peekPauseUntil = Date.now() + 1500; } else { stopPeekAuto(); }
 }
 const idx = e => { const r = dock.getBoundingClientRect(); return Math.max(0, Math.min(4, Math.floor((e.clientX - r.left - 5) / ((r.width - 10) / 5)))); };
 dock.addEventListener("pointerdown", e => { dock.setPointerCapture(e.pointerId); dock.classList.add("press"); go(idx(e)); });
@@ -965,21 +1016,85 @@ btns.forEach((b, k) => b.addEventListener("click", () => go(k)));
 const homeView = $("#v-home");
 $("#heroScroll").addEventListener("click", () => homeView.scrollTo({ top: window.innerHeight * .55, behavior: "smooth" }));
 
-/* ===== Карточки sneak peek (без фото, чёрный фон) ===== */
-const car = $("#car"), dots = $("#dots");
-let cards = [], dt = [];
+
+/* ===== ????? ????????? ===== */
+const IS_STATIC = location.protocol === "file:" || /\.github\.io$/i.test(location.hostname);
+
+/* ===== Sneak peek: карточки, автопрокрутка, админ ===== */
+const car = $("#car"), dots = $("#dots"), peekEmpty = $("#peekEmpty");
+const peekCreate = $("#peekCreate"), peekStatus = peekCreate.querySelector(".peek-status");
+const peekAdminBtn = $("#peekAdminBtn"), peekLogin = $("#peekLogin"), peekPass = $("#peekPass");
+const peekLogout = $("#peekLogout"), peekAdminState = $("#peekAdminState");
+const peekFile = peekCreate.querySelector(".peek-file"), peekPick = peekCreate.querySelector(".peek-pick");
+const peekPickTxt = peekCreate.querySelector(".peek-pick-txt"), peekThumb = peekCreate.querySelector(".peek-thumb");
+const peekThumbImg = peekCreate.querySelector(".peek-thumb-img"), peekRemove = peekCreate.querySelector(".peek-remove");
+let cards = [], dt = [], peekTimer = null, peekPauseUntil = 0, peekPhoto = "";
+const peekIsAdmin = () => !!(typeof forumAdminPass !== "undefined" && forumAdminPass);
+
+function peekReadLocal() {
+  try { const a = JSON.parse(localStorage.getItem("kr-peeks") || "[]"); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+function peekWriteLocal() {
+  try { localStorage.setItem("kr-peeks", JSON.stringify(peekItems.slice(0, 50))); } catch (e) {}
+}
+function compressImage(file, maxW, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      try {
+        let w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", quality));
+      } catch (e) { URL.revokeObjectURL(url); reject(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("img")); };
+    img.src = url;
+  });
+}
+function stopPeekAuto() { if (peekTimer) { clearInterval(peekTimer); peekTimer = null; } }
+function startPeekAuto() {
+  stopPeekAuto();
+  if (!cards.length) return;
+  peekTimer = setInterval(() => {
+    if (!cards.length || document.hidden) return;
+    if (Date.now() < peekPauseUntil) return;
+    if (typeof cur !== "undefined" && cur !== 1) return;
+    if (document.body.classList.contains("sheeted")) return;
+    const c = car.getBoundingClientRect(), mid = c.left + c.width / 2;
+    let best = 0, bd = 1e9;
+    cards.forEach((k, i) => { const r = k.getBoundingClientRect(), d = Math.abs(r.left + r.width / 2 - mid); if (d < bd) { bd = d; best = i; } });
+    const next = (best + 1) % cards.length;
+    car.scrollTo({ left: cards[next].offsetLeft - 22, behavior: "smooth" });
+  }, 3200);
+}
 function renderCards() {
-  car.innerHTML = PEEKS.map((p, i) =>
-    `<button class="card" data-i="${i}" type="button">
-       <span class="num">0${i + 1}</span>
-       <span class="tag">${tr(p.tag)}</span>
-       <span class="ct">${tr(p.t)}</span>
-       <span class="cd">${tr(p.d)}</span>
-     </button>`).join("");
-  dots.innerHTML = PEEKS.map(() => "<i></i>").join("");
+  peekEmpty.hidden = peekItems.length > 0;
+  car.hidden = peekItems.length === 0;
+  dots.hidden = peekItems.length === 0;
+  car.innerHTML = peekItems.map((p, i) => {
+    const img = p.image_url || p.image || "";
+    const tag = tr(p.tag) || t("peek.labelPh");
+    const title = tr(p.title || p.t) || "";
+    const desc = tr(p.body || p.text || p.d) || "";
+    const bg = img ? ` style="background-image:url('${img.replace(/'/g,"%27")}')"` : "";
+    const del = peekIsAdmin() ? `<span class="card-del" data-peek-del="${escHtml(String(p.id))}" role="button" aria-label="${escHtml(t("forum.delete"))}"><svg viewBox="0 0 14 14"><path d="M2 2l10 10M12 2 2 12"/></svg></span>` : "";
+    return `<button class="card${img ? " has-img" : ""}" data-i="${i}" type="button"${bg}>
+       ${del}
+       <span class="num">${String(i + 1).padStart(2,"0")}</span>
+       <span class="tag">${escHtml(tag)}</span>
+       <span class="ct">${escHtml(title)}</span>
+       <span class="cd">${escHtml(desc)}</span>
+     </button>`;
+  }).join("");
+  dots.innerHTML = peekItems.map(() => "<i></i>").join("");
   cards = [...car.children];
   dt = [...dots.children];
   requestAnimationFrame(tilt);
+  startPeekAuto();
 }
 function tilt() {
   if (!cards.length) return;
@@ -993,8 +1108,119 @@ function tilt() {
   });
   dt.forEach((x, i) => x.classList.toggle("on", i === best));
 }
-car.addEventListener("scroll", tilt, { passive: true });
+car.addEventListener("scroll", () => { peekPauseUntil = Date.now() + 4500; tilt(); }, { passive: true });
+car.addEventListener("pointerdown", () => { peekPauseUntil = Date.now() + 6000; });
 addEventListener("resize", tilt);
+
+async function loadPeeks() {
+  if (HAS_SUPABASE) {
+    try {
+      const data = await sb("/rest/v1/peeks?select=*&order=created_at.desc&limit=50");
+      peekItems = Array.isArray(data) ? data : [];
+      renderCards(); return;
+    } catch (e) { /* fall through */ }
+  }
+  peekItems = peekReadLocal();
+  renderCards();
+}
+function paintPeekAdmin() {
+  const admin = peekIsAdmin();
+  peekAdminBtn.hidden = admin;
+  peekLogin.hidden = admin;
+  peekLogout.hidden = !admin;
+  peekCreate.hidden = !admin;
+  if (admin) peekAdminState.textContent = t("forum.adminOn"); else peekAdminState.textContent = "";
+}
+peekAdminBtn.addEventListener("click", () => { peekLogin.hidden = false; peekPass.focus(); });
+peekLogin.addEventListener("submit", async e => {
+  e.preventDefault();
+  const pass = peekPass.value.trim(); if (!pass) return;
+  try {
+    const ok = await forumLoginCheck(pass);
+    if (!ok) throw new Error("bad");
+    forumAdminPass = pass;
+    try { sessionStorage.setItem("kr-admin", pass); } catch (e2) {}
+    peekPass.value = "";
+    paintPeekAdmin(); if (typeof paintForum === "function") paintForum();
+    renderCards();
+  } catch (err) { peekAdminState.textContent = t("forum.adminBad"); }
+});
+peekLogout.addEventListener("click", () => {
+  forumAdminPass = "";
+  try { sessionStorage.removeItem("kr-admin"); } catch (e2) {}
+  paintPeekAdmin(); if (typeof paintForum === "function") paintForum();
+  renderCards();
+});
+peekPick.addEventListener("click", () => peekFile.click());
+peekFile.addEventListener("change", async () => {
+  const f = peekFile.files && peekFile.files[0]; if (!f) return;
+  try {
+    peekPhoto = await compressImage(f, 1200, 0.82);
+    peekThumbImg.src = peekPhoto;
+    peekThumb.hidden = false;
+    peekPickTxt.textContent = t("status.attached");
+  } catch (e2) { peekPhoto = ""; peekStatus.textContent = t("status.readError"); }
+});
+peekRemove.addEventListener("click", e => {
+  e.preventDefault(); peekPhoto = ""; peekFile.value = ""; peekThumbImg.removeAttribute("src");
+  peekThumb.hidden = true; peekPickTxt.textContent = t("peek.pick");
+});
+peekCreate.addEventListener("submit", async e => {
+  e.preventDefault();
+  const tag = peekCreate.querySelector('[name="tag"]').value.trim() || t("peek.labelPh");
+  const title = peekCreate.querySelector('[name="title"]').value.trim();
+  const text = peekCreate.querySelector('[name="text"]').value.trim();
+  const btn = peekCreate.querySelector(".send");
+  const setMsg = (txt, cls) => { peekStatus.textContent = txt || ""; peekStatus.className = "status peek-status" + (cls ? " " + cls : ""); };
+  if (!peekPhoto) { setMsg(t("peek.needPhoto"), "err"); return; }
+  if (title.length < 2 || text.length < 2) { setMsg(t("forum.short"), "err"); return; }
+  btn.disabled = true; btn.textContent = t("forum.publishing");
+  try {
+    if (HAS_SUPABASE) {
+      const data = await sb("/rest/v1/rpc/peek_admin", {
+        method: "POST",
+        body: JSON.stringify({ action:"create", password: forumAdminPass, tag, title, body: text, image_url: peekPhoto })
+      });
+      if (!data || !data.ok) throw new Error((data && data.error) || "denied");
+      await loadPeeks();
+    } else {
+      peekItems.unshift({ id: Date.now().toString(36), tag, title, body: text, image: peekPhoto, created: new Date().toISOString() });
+      peekWriteLocal(); renderCards();
+    }
+    peekCreate.reset(); peekPhoto = ""; peekThumb.hidden = true; peekThumbImg.removeAttribute("src");
+    peekPickTxt.textContent = t("peek.pick");
+    setMsg(t("peek.published"), "ok"); hap("heavy");
+  } catch (err) { setMsg(t("forum.saveError") + (err && err.message ? " ("+err.message+")" : ""), "err"); }
+  finally { btn.disabled = false; btn.textContent = t("peek.publish"); }
+});
+car.addEventListener("click", async e => {
+  const del = e.target.closest("[data-peek-del]");
+  if (del) {
+    e.preventDefault(); e.stopPropagation();
+    if (!peekIsAdmin() || !confirm(t("forum.confirmDelete"))) return;
+    const id = del.dataset.peekDel;
+    try {
+      if (HAS_SUPABASE) {
+        const data = await sb("/rest/v1/rpc/peek_admin", {
+          method: "POST",
+          body: JSON.stringify({ action:"delete", id: id, password: forumAdminPass })
+        });
+        if (!data || !data.ok) throw new Error((data && data.error) || "denied");
+        await loadPeeks();
+      } else {
+        peekItems = peekItems.filter(x => String(x.id) !== String(id));
+        peekWriteLocal(); renderCards();
+      }
+      hap("heavy");
+    } catch (err) { peekAdminState.textContent = t("forum.saveError"); }
+    return;
+  }
+  const c = e.target.closest(".card");
+  if (c) openSheet(+c.dataset.i);
+});
+
+loadPeeks();
+paintPeekAdmin();
 
 /* ===== Sheet ===== */
 const sheet = $("#sheet"), scrim = $("#scrim"), cta = $("#cta");
@@ -1005,10 +1231,11 @@ function paintCta() {
 }
 function paintSheet() {
   if (open < 0) return;
-  const p = PEEKS[open];
-  $("#stag").textContent = tr(p.tag);
-  $("#stitle").textContent = tr(p.t);
-  $("#sdesc").textContent = tr(p.d);
+  const p = peekItems[open];
+  if (!p) return;
+  $("#stag").textContent = tr(p.tag) || "";
+  $("#stitle").textContent = tr(p.title || p.t) || "";
+  $("#sdesc").textContent = tr(p.body || p.text || p.d) || "";
   paintCta();
 }
 function openSheet(i) {
@@ -1018,7 +1245,6 @@ function openSheet(i) {
   hap("light");
 }
 function closeSheet() { document.body.classList.remove("sheeted"); open = -1; }
-car.addEventListener("click", e => { const c = e.target.closest(".card"); if (c) openSheet(+c.dataset.i); });
 scrim.addEventListener("click", closeSheet);
 $("#close").addEventListener("click", closeSheet);
 addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
@@ -1049,7 +1275,6 @@ function endDrag() {
 ["pointerup", "pointercancel"].forEach(t => sheet.addEventListener(t, endDrag));
 
 /* ===== Формы: идеи и сотрудничество ===== */
-const IS_STATIC = location.protocol === "file:" || /\.github\.io$/i.test(location.hostname);
 const formPainters = [];
 
 function initSendForm(form) {
