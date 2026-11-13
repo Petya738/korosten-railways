@@ -136,7 +136,15 @@ body.sheeted #app{transform:scale(.92) translateY(calc(var(--top) + 6px));border
   box-shadow:inset 0 0 0 .5px rgba(255,255,255,.2)}
 .card-del svg{width:14px;height:14px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round}
 #peekCreate{margin-top:14px}
-#peekAdminBar{margin-top:14px}
+.admin-panel{margin-top:14px}
+.admin-note{font-size:13.5px;color:var(--t2);margin-bottom:12px}
+.admin-login{margin-top:12px}
+.admin-onbar{margin-top:10px}
+.pass-wrap{position:relative}
+.pass-wrap .inp{padding-right:46px}
+.pass-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:10px;
+  display:grid;place-items:center;font-size:16px;color:rgba(255,255,255,.7);background:rgba(255,255,255,.06)}
+.pass-toggle:active{transform:translateY(-50%) scale(.94)}
 .dots{display:flex;justify-content:center;gap:7px;margin-top:22px}
 .dots i{width:7px;height:7px;border-radius:4px;background:var(--t3);transition:width .45s var(--ios),background .3s}
 .dots i.on{width:20px;background:#fff}
@@ -368,6 +376,27 @@ body.sheeted .sheet{transform:none}
         <p data-i18n-html="plans.p1">В работе — Вінниця и новые участки маршрута. Детализируем станции и готовим расписание.</p>
         <p data-i18n-html="plans.p2">Часть контента показываем во вкладке <b>«Сник пик»</b>. Идеи и баги — во вкладке <b>«Связь»</b>.</p>
       </section>
+
+      <section class="panel admin-panel" id="adminPanel">
+        <span class="kicker" data-i18n="admin.kicker">Создатель</span>
+        <h2 data-i18n="admin.h1">Аккаунт создателя</h2>
+        <p class="admin-note" data-i18n="admin.note">Один вход для форума и сник-пиков.</p>
+        <button type="button" class="forum-adminbtn" id="globalAdminBtn" data-i18n="forum.adminLogin">Войти как создатель</button>
+        <form class="admin-login" id="globalAdminLogin" hidden>
+          <div class="field">
+            <label data-i18n="admin.pass">Пароль</label>
+            <div class="pass-wrap">
+              <input class="inp" type="password" id="globalAdminPass" autocomplete="current-password" data-i18n-ph="forum.passPh" placeholder="Пароль создателя">
+              <button type="button" class="pass-toggle" id="globalPassToggle" aria-label="Показать пароль" data-i18n-aria="admin.show">👁</button>
+            </div>
+          </div>
+          <button class="send" type="submit" data-i18n="forum.login">Войти</button>
+        </form>
+        <div class="forum-adminbar admin-onbar">
+          <span class="forum-adminstate" id="globalAdminState"></span>
+          <button type="button" class="forum-adminbtn" id="globalAdminLogout" hidden data-i18n="forum.adminLogout">Выйти</button>
+        </div>
+      </section>
     </div>
   </section>
 
@@ -378,15 +407,7 @@ body.sheeted .sheet{transform:none}
       <p class="sub" data-i18n="peek.sub">Что готовим для проекта</p>
     </div>
 
-    <div class="forum-adminbar" id="peekAdminBar">
-      <button type="button" class="forum-adminbtn" id="peekAdminBtn" data-i18n="forum.adminLogin">Войти как создатель</button>
-      <form class="forum-login" id="peekLogin" hidden>
-        <input class="inp" type="password" id="peekPass" autocomplete="current-password" data-i18n-ph="forum.passPh" placeholder="Пароль создателя">
-        <button class="forum-loginbtn" type="submit" data-i18n="forum.login">Войти</button>
-      </form>
-      <span class="forum-adminstate" id="peekAdminState"></span>
-      <button type="button" class="forum-adminbtn" id="peekLogout" hidden data-i18n="forum.adminLogout">Выйти</button>
-    </div>
+
 
     <form class="form-card" id="peekCreate" hidden novalidate>
       <h2 data-i18n="peek.createH">Добавить карточку</h2>
@@ -565,15 +586,7 @@ body.sheeted .sheet{transform:none}
 
     <p class="forum-note" id="forumNote" hidden></p>
 
-    <div class="forum-adminbar">
-      <button type="button" class="forum-adminbtn" id="forumAdminBtn" data-i18n="forum.adminLogin">Войти как создатель</button>
-      <form class="forum-login" id="forumLogin" hidden>
-        <input class="inp" type="password" id="forumPass" autocomplete="current-password" data-i18n-ph="forum.passPh" placeholder="Пароль создателя">
-        <button class="forum-loginbtn" type="submit" data-i18n="forum.login">Войти</button>
-      </form>
-      <span class="forum-adminstate" id="forumAdminState"></span>
-      <button type="button" class="forum-adminbtn" id="forumLogout" hidden data-i18n="forum.adminLogout">Выйти</button>
-    </div>
+
 
     <form class="form-card forum-create" id="formForum" novalidate>
       <h2 data-i18n="forum.createH">Создать тему</h2>
@@ -744,6 +757,12 @@ const I18N = {
     "forum.passPh": "Пароль создателя",
     "forum.adminOn": "Режим создателя включён",
     "forum.adminBad": "Неверный пароль",
+    "admin.kicker": "Создатель",
+    "admin.h1": "Аккаунт создателя",
+    "admin.note": "Один вход для форума и сник-пиков.",
+    "admin.pass": "Пароль",
+    "admin.show": "Показать пароль",
+    "admin.hide": "Скрыть пароль",
     "forum.createH": "Создать тему",
     "forum.createHint": "Задай вопрос, предложи идею или сообщи о баге.",
     "forum.title": "Заголовок",
@@ -888,6 +907,12 @@ const I18N = {
     "forum.passPh": "Пароль творця",
     "forum.adminOn": "Режим творця увімкнено",
     "forum.adminBad": "Невірний пароль",
+    "admin.kicker": "Творець",
+    "admin.h1": "Акаунт творця",
+    "admin.note": "Один вхід для форуму та снік-піків.",
+    "admin.pass": "Пароль",
+    "admin.show": "Показати пароль",
+    "admin.hide": "Сховати пароль",
     "forum.createH": "Створити тему",
     "forum.createHint": "Постав питання, запропонуй ідею або повідом про баг.",
     "forum.title": "Заголовок",
@@ -971,8 +996,7 @@ function applyLang() {
   langBtns.forEach(b => b.classList.toggle("on", b.dataset.lang === LANG));
   renderCards();
   if (open >= 0) paintSheet();
-  paintPeekAdmin();
-  if (peekPickTxt && !peekPhoto) peekPickTxt.textContent = t("peek.pick");
+  if (typeof paintAdmin === "function") paintAdmin();
   paintCta();
   formPainters.forEach(fn => fn());
   paintForum();
@@ -1025,9 +1049,10 @@ const FORUM_STATUSES = ["pending", "progress", "accepted", "declined", "done"];
 const FORUM_LS = "kr-forum";
 const STATIC_ADMIN_PASSWORD = "Petya1028";
 const forumList = $("#forumList"), forumFilters = $("#forumFilters"), forumNote = $("#forumNote");
-const formForum = $("#formForum"), forumAdminBtn = $("#forumAdminBtn"), forumLogin = $("#forumLogin");
-const forumPass = $("#forumPass"), forumLogout = $("#forumLogout"), forumAdminState = $("#forumAdminState");
-let forumTopics = [], forumFilter = "all", forumMode = "demo", forumAdminPass = "", forumLoginOpen = false;
+const formForum = $("#formForum");
+const globalAdminBtn = $("#globalAdminBtn"), globalAdminLogin = $("#globalAdminLogin"), globalAdminPass = $("#globalAdminPass");
+const globalAdminLogout = $("#globalAdminLogout"), globalAdminState = $("#globalAdminState"), globalPassToggle = $("#globalPassToggle");
+let forumTopics = [], forumFilter = "all", forumMode = "demo", forumAdminPass = "", adminLoginOpen = false;
 try { forumAdminPass = sessionStorage.getItem("kr-admin") || ""; } catch (e) {}
 
 const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -1073,8 +1098,9 @@ async function apiForum(payload) {
   return data;
 }
 function forumSetMsg(text, cls) {
-  forumAdminState.textContent = text || "";
-  forumAdminState.className = "forum-adminstate" + (cls ? " " + cls : "");
+  if (!globalAdminState) return;
+  globalAdminState.textContent = text || "";
+  globalAdminState.className = "forum-adminstate" + (cls ? " " + cls : "");
 }
 function paintForumNote() {
   const show = forumMode !== "server" && forumMode !== "cloud";
@@ -1082,13 +1108,20 @@ function paintForumNote() {
   if (!show) return;
   forumNote.textContent = forumMode === "demo-static" ? t("forum.staticNote") : t("forum.localOnly");
 }
-function paintForumAdmin() {
+function paintAdmin() {
   const admin = !!forumAdminPass;
-  forumAdminBtn.hidden = admin;
-  forumLogin.hidden = admin ? true : !forumLoginOpen;
-  forumLogout.hidden = !admin;
-  if (admin) { forumSetMsg(t("forum.adminOn")); forumLoginOpen = false; }
+  if (globalAdminBtn) globalAdminBtn.hidden = admin;
+  if (globalAdminLogin) globalAdminLogin.hidden = admin ? true : !adminLoginOpen;
+  if (globalAdminLogout) globalAdminLogout.hidden = !admin;
+  if (peekCreate) peekCreate.hidden = !admin;
+  if (globalAdminState) {
+    if (admin) forumSetMsg(t("forum.adminOn"));
+    else if (!adminLoginOpen) forumSetMsg("");
+  }
+  if (typeof renderCards === "function") renderCards();
 }
+function paintForumAdmin(){ paintAdmin(); }
+function paintPeekAdmin(){ paintAdmin(); }
 function renderForumFilters() {
   const defs = [["all", t("forum.filter.all")]].concat(FORUM_STATUSES.map(s => [s, t("forum.status." + s)]));
   forumFilters.innerHTML = defs.map(([k, label]) =>
@@ -1127,7 +1160,7 @@ function paintForum() {
   if (!forumFilters || !forumList) return;
   renderForumFilters();
   renderForumList();
-  paintForumAdmin();
+  paintAdmin();
   paintForumNote();
   const btn = formForum.querySelector(".send");
   if (btn && !btn.dataset.busy) btn.textContent = t("forum.publish");
@@ -1180,26 +1213,35 @@ async function forumLoginCheck(pass) {
   return true;
 }
 
-forumAdminBtn.addEventListener("click", () => { forumLoginOpen = true; forumLogin.hidden = false; forumPass.focus(); });
-forumLogin.addEventListener("submit", async e => {
+globalAdminBtn.addEventListener("click", () => { adminLoginOpen = true; globalAdminLogin.hidden = false; globalAdminPass.focus(); });
+globalAdminLogin.addEventListener("submit", async e => {
   e.preventDefault();
-  const pass = forumPass.value.trim();
+  const pass = globalAdminPass.value.trim();
   if (!pass) return;
   try {
     const ok = await forumLoginCheck(pass);
     if (!ok) throw new Error("bad");
     forumAdminPass = pass;
+    adminLoginOpen = false;
     try { sessionStorage.setItem("kr-admin", pass); } catch (e2) {}
-    forumLoginOpen = false;
-    forumPass.value = "";
-    paintForum();
-  } catch (err) { forumSetMsg(t("forum.adminBad"), "err"); }
+    globalAdminPass.value = "";
+    paintAdmin();
+    if (typeof paintForum === "function") paintForum();
+  } catch (err) { forumSetMsg(t("forum.adminBad"), "err"); hap("medium"); }
 });
-forumLogout.addEventListener("click", () => {
+globalPassToggle.addEventListener("click", () => {
+  const show = globalAdminPass.type === "password";
+  globalAdminPass.type = show ? "text" : "password";
+  globalPassToggle.textContent = show ? "??" : "??";
+  globalPassToggle.setAttribute("aria-label", t(show ? "admin.hide" : "admin.show"));
+});
+globalAdminLogout.addEventListener("click", () => {
   forumAdminPass = "";
-  forumLoginOpen = false;
+  adminLoginOpen = false;
   try { sessionStorage.removeItem("kr-admin"); } catch (e) {}
-  paintForum();
+  globalAdminPass.value = "";
+  paintAdmin();
+  if (typeof paintForum === "function") paintForum();
 });
 forumFilters.addEventListener("click", e => {
   const b = e.target.closest("button[data-f]");
